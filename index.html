@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>珍北平現金簿</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#D72638">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="現金簿">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #D72638;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: 0;
+    display: block;
+    background: #FFFFFF;
+  }
+  #loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #D72638;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', sans-serif;
+    z-index: 10;
+    transition: opacity .3s;
+  }
+  #loading.hide { opacity: 0; pointer-events: none; }
+  #loading img { width: 96px; height: 96px; border-radius: 20px; margin-bottom: 16px; }
+  #loading .t { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  #loading .s { font-size: 13px; opacity: .75; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <img src="icon-192.png" alt="">
+  <div class="t">珍北平現金簿</div>
+  <div class="s">載入中…</div>
+</div>
+
+<iframe
+  id="app"
+  src="https://script.google.com/macros/s/AKfycbyjgC_zufaoeQ4k4Tw2isJidey6DKvX7F7LRMkm8_b2ZL0uxwqfu3W7EemP75HK0zP2GA/exec"
+  allow="clipboard-write"
+  referrerpolicy="no-referrer-when-downgrade">
+</iframe>
+
+<script>
+  // iframe 載入完成後隱藏 loading 畫面
+  document.getElementById('app').addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('loading').classList.add('hide');
+    }, 500);
+  });
+
+  // 註冊 Service Worker（這裡在 GitHub Pages 頂層，沒有 iframe 沙盒問題）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then((reg) => console.log('[PWA] SW 已註冊', reg.scope))
+        .catch((err) => console.warn('[PWA] SW 註冊失敗', err));
+    });
+  }
+</script>
+
+</body>
+</html>
