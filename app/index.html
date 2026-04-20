@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>珍北平現金簿</title>
+
+<!-- PWA：Android Chrome -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#D72638">
+<link rel="icon" type="image/png" sizes="192x192" href="https://weifu0716.github.io/pwa-icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="https://weifu0716.github.io/pwa-icons/icon-512.png">
+
+<!-- PWA：iOS Safari（iOS 不讀 manifest，要另外寫） -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="現金簿">
+<link rel="apple-touch-icon" href="https://weifu0716.github.io/pwa-icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --red: #c62828;
+  --red-dark: #8e0000;
+  --green: #2e7d32;
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --sub: #8e8e93;
+  --border: #e5e5ea;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Heiti TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 68px;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--red);
+  color: #fff;
+  padding: 14px 16px 12px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.header h1 { font-size: 17px; font-weight: 700; letter-spacing: 2px; }
+.header .bal { font-size: 12px; opacity: .85; margin-top: 3px; }
+
+/* ── Balance Card ── */
+.bal-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bal-card .bc-lbl { font-size: 13px; color: var(--sub); font-weight: 500; }
+.bal-card .bc-amt { font-size: 30px; font-weight: 800; color: var(--text); letter-spacing: 1px; }
+.bal-card .bc-amt.pos { color: var(--green); }
+.bal-card .bc-amt.neg { color: var(--red); }
+.bal-card .bc-refresh {
+  background: var(--bg);
+  border: none;
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+/* ── Bottom Nav ── */
+.bnav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  height: 60px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nbtn {
+  flex: 1;
+  border: none;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--sub);
+  cursor: pointer;
+  gap: 2px;
+}
+.nbtn.on { color: var(--red); }
+.nbtn svg { width: 22px; height: 22px; fill: currentColor; }
+
+/* ── Tabs ── */
+.tab { display: none; padding: 14px 14px 0; }
+.tab.on { display: block; }
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+
+/* ── Type Toggle ── */
+.toggle {
+  display: flex;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 16px;
+  gap: 3px;
+}
+.tbtn {
+  flex: 1;
+  padding: 11px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all .2s;
+}
+.tbtn.exp { background: var(--red); color: #fff; }
+.tbtn.inc { background: var(--green); color: #fff; }
+
+/* ── Form ── */
+.fld { margin-bottom: 13px; }
+.fld label { display: block; font-size: 12px; color: var(--sub); margin-bottom: 5px; font-weight: 500; }
+.fld input, .fld select {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  color: var(--text);
+  background: #fff;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color .2s;
+}
+.fld input:focus, .fld select:focus { border-color: var(--red); }
+.amt { font-size: 26px !important; font-weight: 700 !important; text-align: right; letter-spacing: 1px; }
+.sbtn {
+  width: 100%;
+  padding: 14px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: opacity .2s;
+}
+.sbtn:active { opacity: .8; }
+.sbtn:disabled { opacity: .55; }
+
+/* ── Month Picker ── */
+.mpick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+.marr {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--red);
+  cursor: pointer;
+  padding: 2px 8px;
+  line-height: 1;
+}
+.mlbl { font-size: 16px; font-weight: 700; }
+
+/* ── Transaction List (帳房簿 · 大字) ── */
+#tab-list { padding: 14px 10px 0; }
+.day-group {
+  margin-bottom: 18px;
+  background: #fff;
+  position: relative;
+  border: 1.5px solid #1c1c1e;
+  border-left: 6px solid var(--red);
+  padding: 16px 18px 8px;
+  border-radius: 4px 14px 14px 4px;
+  box-shadow: 4px 4px 0 rgba(28,28,30,.08);
+}
+.day-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 2px 0 12px;
+  border-bottom: 2px solid #1c1c1e;
+  margin-bottom: 4px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.day-header-left { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.dh-date {
+  font-family: 'Noto Serif TC', 'Songti TC', serif;
+  font-size: 44px;
+  font-weight: 900;
+  color: var(--red);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.dh-wday {
+  font-family: 'Noto Serif TC', 'Songti TC', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1c1e;
+  letter-spacing: 2px;
+}
+.dh-sum {
+  display: flex;
+  gap: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: 'Inter', -apple-system, sans-serif;
+  text-align: right;
+}
+.dh-sum .dh-inc { color: var(--green); }
+.dh-sum .dh-exp { color: var(--red); }
+.txn {
+  display: flex;
+  align-items: center;
+  padding: 16px 12px;
+  border-bottom: 1px dashed #d4d4d8;
+  gap: 14px;
+  border-radius: 8px;
+  margin: 2px 0;
+}
+.txn:last-child { border-bottom: none; }
+.txn-info { flex: 1; min-width: 0; }
+.txn-desc {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1c1c1e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  letter-spacing: .3px;
+}
+.txn-tag {
+  font-size: 14px;
+  color: #6b6b70;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: .3px;
+}
+.txn-right { text-align: right; flex-shrink: 0; }
+.txn-amt {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  line-height: 1;
+}
+.txn-amt.i { color: var(--green); }
+.txn-amt.e { color: var(--red); }
+.txn-bal {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 13px;
+  color: #8e8e93;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* list summary bar 放大 */
+.lsbar .lbl { font-size: 13px !important; }
+.lsbar .val { font-size: 20px !important; font-weight: 800 !important; font-family: 'Inter', -apple-system, sans-serif; }
+
+/* month picker 放大 */
+.mlbl { font-size: 19px !important; font-family: 'Noto Serif TC', serif; font-weight: 700; letter-spacing: 2px; }
+.marr { font-size: 30px !important; }
+
+/* ── List Summary Bar ── */
+.lsbar {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 2px;
+}
+.lsbar span { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.lsbar .lbl { font-size: 11px; color: var(--sub); }
+.lsbar .val { font-weight: 700; font-size: 15px; }
+.inc-c { color: var(--green); }
+.exp-c { color: var(--red); }
+
+/* ── Report ── */
+.sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.sc {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  text-align: center;
+}
+.sc.full { grid-column: 1 / -1; }
+.sc .slbl { font-size: 12px; color: var(--sub); margin-bottom: 5px; }
+.sc .sval { font-size: 21px; font-weight: 700; }
+.sval.inc { color: var(--green); }
+.sval.exp { color: var(--red); }
+.sval.pos { color: var(--green); }
+.sval.neg { color: var(--red); }
+
+.catrow {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.catrow:last-child { border-bottom: none; }
+.catrow-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.cdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cname { flex: 1; font-size: 14px; font-weight: 500; }
+.camts { text-align: right; font-size: 13px; }
+.camts .ci { color: var(--green); font-weight: 600; }
+.camts .ce { color: var(--red); font-weight: 600; }
+.pbar { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
+.pfill { height: 100%; border-radius: 3px; transition: width .5s; }
+
+/* ── Cash Count ── */
+.denom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.denom-item {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.denom-item label {
+  display: block;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.denom-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.denom-row input {
+  width: 70px;
+  padding: 7px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: right;
+  background: #fff;
+  outline: none;
+  -webkit-appearance: none;
+}
+.denom-row input:focus { border-color: var(--red); }
+.denom-sub {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+  flex: 1;
+  text-align: right;
+}
+.extra-item {
+  margin-bottom: 10px;
+}
+.extra-item label {
+  display: block;
+  font-size: 12px;
+  color: var(--sub);
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.extra-item input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: right;
+  background: #fff;
+  outline: none;
+  -webkit-appearance: none;
+}
+.extra-item input:focus { border-color: var(--red); }
+.count-result {
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.cr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.cr-row:last-child { border-bottom: none; }
+.cr-row .cr-lbl { font-size: 14px; color: var(--sub); }
+.cr-row .cr-val { font-size: 18px; font-weight: 700; }
+.cr-row.highlight { background: #f8f8f8; }
+.cr-row.diff-ok .cr-val { color: var(--green); }
+.cr-row.diff-ng .cr-val { color: var(--red); }
+.diff-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.diff-badge.ok { background: #e8f5e9; color: var(--green); }
+.diff-badge.ng { background: #ffebee; color: var(--red); }
+
+/* ── Misc ── */
+.loading, .empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--sub);
+  font-size: 14px;
+}
+.toast {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1c1c1e;
+  color: #fff;
+  padding: 11px 22px;
+  border-radius: 22px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all .28s;
+  z-index: 300;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.sec-title { font-size: 13px; font-weight: 700; color: #424242; margin-bottom: 12px; letter-spacing: .5px; }
+
+/* ── Quick Buttons ── */
+.quick-card { margin-bottom: 12px; }
+.qgroup { margin-bottom: 10px; }
+.qgroup-label { font-size: 11px; color: var(--sub); font-weight: 600; margin-bottom: 6px; letter-spacing: .5px; }
+.qbtn-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.qbtn {
+  padding: 8px 13px;
+  border-radius: 20px;
+  border: 1.5px solid;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.qbtn:active { opacity: .7; transform: scale(.96); }
+.qbtn.inc  { border-color: var(--green); color: var(--green); }
+.qbtn.inc.sel  { background: var(--green); color: #fff; }
+.qbtn.exp  { border-color: #1565c0; color: #1565c0; }
+.qbtn.exp.sel  { background: #1565c0; color: #fff; }
+.qbtn.exp2 { border-color: #6a1b9a; color: #6a1b9a; }
+.qbtn.exp2.sel { background: #6a1b9a; color: #fff; }
+
+/* ── Dashboard ── */
+.dash-bal {
+  background: linear-gradient(135deg, #c62828 0%, #8e0000 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 20px 20px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(198,40,40,.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dash-bal .db-lbl { font-size: 12px; opacity: .8; margin-bottom: 6px; }
+.dash-bal .db-amt { font-size: 32px; font-weight: 800; letter-spacing: 1px; }
+.dash-bal .db-ref {
+  background: rgba(255,255,255,.2);
+  border: none;
+  border-radius: 50%;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  color: #fff;
+}
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.kpi {
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+.kpi.full { grid-column: 1 / -1; }
+.kpi .kl { font-size: 11px; color: var(--sub); margin-bottom: 6px; font-weight: 500; }
+.kpi .kv { font-size: 22px; font-weight: 800; }
+.kv.inc { color: var(--green); }
+.kv.exp { color: var(--red); }
+.kv.pos { color: var(--green); }
+.kv.neg { color: var(--red); }
+.kv.neu { color: var(--text); }
+.kpi .ksub { font-size: 11px; color: var(--sub); margin-top: 3px; }
+
+.pie-wrap {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+.pie-canvas-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 14px;
+}
+.pie-legend { }
+.pie-leg-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.pie-leg-row:last-child { border-bottom: none; }
+.pie-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pie-name { flex: 1; font-size: 13px; font-weight: 500; }
+.pie-right { text-align: right; }
+.pie-amt { font-size: 14px; font-weight: 700; }
+.pie-pct { font-size: 11px; color: var(--sub); margin-top: 1px; }
+.pie-remaining { background: #f0fff4; }
+.pie-remaining .pie-name { color: var(--green); }
+.pie-remaining-neg { background: #fff5f5; }
+.pie-remaining-neg .pie-name { color: var(--red); }
+.no-data-dash {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--sub);
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>珍北平現金簿</h1>
+  <div class="bal" id="hbal">餘額載入中…</div>
+</div>
+
+<!-- ════ TAB：記帳 ════ -->
+<div class="tab on" id="tab-input">
+
+  <!-- 餘額大字顯示 -->
+  <div class="bal-card">
+    <div>
+      <div class="bc-lbl">目前現金餘額</div>
+      <div class="bc-amt" id="bc-amt">—</div>
+    </div>
+    <button class="bc-refresh" onclick="loadBal()" title="更新">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#8e8e93">
+        <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 快速記帳 -->
+  <div class="card quick-card">
+    <div class="sec-title">快速記帳</div>
+
+    <div class="qbtn-row">
+      <button class="qbtn inc"  onclick="quickFill('日營業額','收入','營業額收入','珍北平收入',this)">日營業額</button>
+      <button class="qbtn exp"  onclick="quickFill('珍北平(豬肉 丸星)','支出','公司用(已提供憑證)','珍北平固定支出',this)">豬肉(丸星)</button>
+      <button class="qbtn exp"  onclick="quickFill('珍北平(豬肉 大方)','支出','公司用(已提供憑證)','珍北平固定支出',this)">豬肉(大方)</button>
+      <button class="qbtn exp"  onclick="quickFill('珍北平備用金','支出','公司用(已提供憑證)','珍北平固定支出',this)">備用金補充</button>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <div class="toggle">
+      <button class="tbtn exp" id="btn-exp" onclick="setType('支出')">支　出</button>
+      <button class="tbtn" id="btn-inc" onclick="setType('收入')">收　入</button>
+    </div>
+
+    <div class="fld">
+      <label>金額</label>
+      <input id="amount" class="amt" type="number" inputmode="decimal" placeholder="0" min="0" step="1">
+    </div>
+
+    <div class="fld">
+      <label>日期</label>
+      <input id="date" type="date">
+    </div>
+
+    <div class="fld">
+      <label>說明</label>
+      <input id="desc" type="text" placeholder="例：珍北平（豬肉錢）">
+    </div>
+
+    <div class="fld">
+      <label>備註2（會計用）</label>
+      <select id="note2">
+        <option value="">— 選擇 —</option>
+        <option>公司用(已提供憑證)</option>
+        <option>公司用(未提供憑證)</option>
+        <option>家用</option>
+        <option>營業額收入</option>
+        <option>消失的誤差值</option>
+        <option>爸媽借款</option>
+      </select>
+    </div>
+
+    <div class="fld">
+      <label>備註3（月報分類）</label>
+      <select id="note3">
+        <option value="">— 選擇 —</option>
+        <option>珍北平收入</option>
+        <option>珍北平固定支出</option>
+        <option>珍北平流動支出</option>
+        <option>家庭用支出</option>
+        <option>父母用支出</option>
+        <option>家庭收入</option>
+        <option>消失的錢</option>
+        <option>父母借支公司</option>
+      </select>
+    </div>
+
+    <button class="sbtn" id="sbtn" onclick="submit()">記　帳</button>
+  </div>
+</div>
+
+<!-- ════ TAB：明細 ════ -->
+<div class="tab" id="tab-list">
+  <div class="mpick">
+    <button class="marr" onclick="chMonth(-1)">‹</button>
+    <span class="mlbl" id="lmlbl"></span>
+    <button class="marr" onclick="chMonth(1)">›</button>
+  </div>
+
+  <div class="card" id="lsbar-card" style="display:none">
+    <div class="lsbar">
+      <span><span class="lbl">收入</span><span class="val inc-c" id="ls-i"></span></span>
+      <span><span class="lbl">支出</span><span class="val exp-c" id="ls-e"></span></span>
+      <span><span class="lbl">淨流量</span><span class="val" id="ls-n"></span></span>
+    </div>
+  </div>
+
+  <div id="txn-wrap">
+    <div class="card"><div class="loading">載入中…</div></div>
+  </div>
+</div>
+
+<!-- ════ TAB：月報 ════ -->
+<div class="tab" id="tab-report">
+  <div class="mpick">
+    <button class="marr" onclick="chRMonth(-1)">‹</button>
+    <span class="mlbl" id="rmlbl"></span>
+    <button class="marr" onclick="chRMonth(1)">›</button>
+  </div>
+  <div id="report-wrap"><div class="loading">載入中…</div></div>
+</div>
+
+<!-- ════ TAB：儀表板 ════ -->
+<div class="tab" id="tab-dash">
+  <div class="mpick">
+    <button class="marr" onclick="chDMonth(-1)">‹</button>
+    <span class="mlbl" id="dmlbl"></span>
+    <button class="marr" onclick="chDMonth(1)">›</button>
+  </div>
+  <div id="dash-wrap"><div class="loading">載入中…</div></div>
+</div>
+
+<!-- ════ TAB：盤點 ════ -->
+<div class="tab" id="tab-count">
+  <div class="card">
+    <div class="sec-title" style="margin-bottom:14px">現金盤點</div>
+
+    <!-- 幣別輸入 -->
+    <div class="denom-grid">
+      <div class="denom-item">
+        <label>$1 硬幣</label>
+        <div class="denom-row">
+          <input id="d1" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s1">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$5 硬幣</label>
+        <div class="denom-row">
+          <input id="d5" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s5">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$10 硬幣</label>
+        <div class="denom-row">
+          <input id="d10" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s10">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$50 硬幣</label>
+        <div class="denom-row">
+          <input id="d50" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s50">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$100 紙鈔</label>
+        <div class="denom-row">
+          <input id="d100" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s100">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$200 紙鈔</label>
+        <div class="denom-row">
+          <input id="d200" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s200">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$500 紙鈔</label>
+        <div class="denom-row">
+          <input id="d500" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s500">—</span>
+        </div>
+      </div>
+      <div class="denom-item">
+        <label>$1000 紙鈔</label>
+        <div class="denom-row">
+          <input id="d1000" type="number" inputmode="numeric" placeholder="0" min="0" oninput="calcCount()">
+          <span class="denom-sub" id="s1000">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 金庫 / 備用金 -->
+    <div class="extra-item">
+      <label>金庫金額（直接填總額）</label>
+      <input id="csafe" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+    </div>
+    <div class="extra-item">
+      <label>備用金金額（直接填總額）</label>
+      <input id="cpetty" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+    </div>
+
+    <!-- 備註 -->
+    <div class="extra-item">
+      <label>備註（選填）</label>
+      <input id="cnote" type="text" placeholder="例：月底盤點">
+    </div>
+  </div>
+
+  <!-- 結果卡 -->
+  <div class="count-result" id="count-result">
+    <div class="cr-row"><span class="cr-lbl">實際現金合計</span><span class="cr-val" id="cr-total">$0</span></div>
+    <div class="cr-row"><span class="cr-lbl">帳上餘額</span><span class="cr-val" id="cr-book">—</span></div>
+    <div class="cr-row highlight" id="cr-diff-row">
+      <span class="cr-lbl">差異</span>
+      <span id="cr-diff-badge" class="diff-badge ok">±0　平衡 ✓</span>
+    </div>
+  </div>
+
+  <button class="sbtn" id="count-btn" onclick="saveCount()">儲存盤點記錄</button>
+  <div style="height:16px"></div>
+</div>
+
+<!-- ════ Bottom Nav ════ -->
+<nav class="bnav">
+  <button class="nbtn on" id="nav-input" onclick="goTab('input')">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    記帳
+  </button>
+  <button class="nbtn" id="nav-list" onclick="goTab('list')">
+    <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+    明細
+  </button>
+  <button class="nbtn" id="nav-report" onclick="goTab('report')">
+    <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+    月報
+  </button>
+  <button class="nbtn" id="nav-dash" onclick="goTab('dash')">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+    儀表板
+  </button>
+  <button class="nbtn" id="nav-count" onclick="goTab('count')">
+    <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+    盤點
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── API 設定 ──────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbyjgC_zufaoeQ4k4Tw2isJidey6DKvX7F7LRMkm8_b2ZL0uxwqfu3W7EemP75HK0zP2GA/exec';
+const API_KEY = 'K3nB7mQ2pR5tW8yZ4cV6eH1jL0sF9aXd';
+
+// 用 text/plain 避免 CORS preflight（GAS 不支援 OPTIONS）
+function api(action, payload) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ key: API_KEY, action, payload: payload || {} }),
+    redirect: 'follow'
+  })
+  .then(r => r.json())
+  .then(r => {
+    if (!r.success) throw new Error(r.error || '未知錯誤');
+    return r.data;
+  });
+}
+
+// ── State ──────────────────────────────────
+let cType = '支出';
+let lY, lM, rY, rM, dY, dM;
+
+const MNAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const CAT_COLOR = {
+  '珍北平收入':     '#2e7d32',
+  '珍北平固定支出': '#1565c0',
+  '珍北平流動支出': '#6a1b9a',
+  '家庭用支出':     '#e65100',
+  '父母用支出':     '#f9a825',
+  '家庭收入':       '#00838f',
+  '消失的錢':       '#546e7a',
+  '父母借支公司':   '#6d4c41',
+  '未分類':         '#9e9e9e'
+};
+// 圓餅圖只顯示「淨利支出分配」的類別
+const DIST_CATS   = ['珍北平流動支出','家庭用支出','父母用支出','消失的錢','父母借支公司'];
+const REMAIN_COL  = '#2e7d32';
+const REMAIN_NEG_COL = '#c62828';
+
+// ── Init ───────────────────────────────────
+(function() {
+  const now = new Date();
+  document.getElementById('date').value = now.toISOString().split('T')[0];
+  lY = rY = dY = now.getFullYear();
+  lM = rM = dM = now.getMonth() + 1;
+  updMlbls();
+  loadBal();
+})();
+
+function fmt(n) {
+  return Number(n).toLocaleString('zh-TW');
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function hexA(hex, a) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ── Balance ────────────────────────────────
+function loadBal() {
+  api('getCurrentBalance').then(b => {
+    const s = fmt(b);
+    document.getElementById('hbal').textContent = '現金餘額：$' + s;
+    const el = document.getElementById('bc-amt');
+    el.textContent = '$' + s;
+    el.className = 'bc-amt' + (b < 0 ? ' neg' : b > 0 ? ' pos' : '');
+  }).catch(() => {});
+}
+
+// ── Quick Fill ─────────────────────────────
+let lastQBtn = null;
+function quickFill(desc, type, note2, note3, btn) {
+  // 清除上一顆選中狀態
+  if (lastQBtn && lastQBtn !== btn) lastQBtn.classList.remove('sel');
+  btn.classList.toggle('sel');
+  lastQBtn = btn.classList.contains('sel') ? btn : null;
+
+  if (!btn.classList.contains('sel')) return; // 取消選取就不填
+
+  setType(type);
+  document.getElementById('desc').value = desc;
+  document.getElementById('note2').value = note2;
+  document.getElementById('note3').value = note3;
+  // 跳到金額欄
+  document.getElementById('amount').focus();
+  document.getElementById('amount').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── Type Toggle ────────────────────────────
+function setType(t) {
+  cType = t;
+  document.getElementById('btn-exp').className = 'tbtn' + (t === '支出' ? ' exp' : '');
+  document.getElementById('btn-inc').className = 'tbtn' + (t === '收入' ? ' inc' : '');
+  if (t === '收入') {
+    document.getElementById('note2').value = '營業額收入';
+    document.getElementById('note3').value = '珍北平收入';
+  } else {
+    document.getElementById('note2').value = '';
+    document.getElementById('note3').value = '';
+  }
+}
+
+// ── Submit ─────────────────────────────────
+function submit() {
+  const amount = document.getElementById('amount').value;
+  const date   = document.getElementById('date').value;
+  const desc   = document.getElementById('desc').value.trim();
+  const note2  = document.getElementById('note2').value;
+  const note3  = document.getElementById('note3').value;
+
+  if (!amount || parseFloat(amount) <= 0) { toast('請輸入金額'); return; }
+  if (!date)                               { toast('請選擇日期'); return; }
+  if (!desc)                               { toast('請輸入說明'); return; }
+
+  const btn = document.getElementById('sbtn');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  api('addTransaction', { type: cType, amount, date, description: desc, note2, note3 })
+    .then(r => {
+      if (r.success) {
+        toast('✓ 記帳成功！餘額 $' + fmt(r.balance));
+        document.getElementById('amount').value = '';
+        document.getElementById('desc').value = '';
+        document.getElementById('note2').value = '';
+        document.getElementById('note3').value = '';
+        if (lastQBtn) { lastQBtn.classList.remove('sel'); lastQBtn = null; }
+        const s = fmt(r.balance);
+        document.getElementById('hbal').textContent = '現金餘額：$' + s;
+        const el = document.getElementById('bc-amt');
+        el.textContent = '$' + s;
+        el.className = 'bc-amt' + (r.balance < 0 ? ' neg' : r.balance > 0 ? ' pos' : '');
+      } else {
+        toast('❌ ' + r.error);
+      }
+      btn.disabled = false;
+      btn.textContent = '記　帳';
+    })
+    .catch(() => {
+      toast('❌ 連線失敗，請重試');
+      btn.disabled = false;
+      btn.textContent = '記　帳';
+    });
+}
+
+// ── Tab Switch ─────────────────────────────
+function goTab(t) {
+  ['input','list','report','dash','count'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('on', id === t);
+    document.getElementById('nav-' + id).classList.toggle('on', id === t);
+  });
+  if (t === 'list')   loadTxns();
+  if (t === 'report') loadReport();
+  if (t === 'dash')   loadDashboard();
+  if (t === 'count')  initCount();
+}
+
+// ── Cash Count ─────────────────────────────
+let countBookBal = 0;
+
+function initCount() {
+  api('getCurrentBalance').then(b => {
+    countBookBal = b;
+    document.getElementById('cr-book').textContent = '$' + fmt(b);
+    calcCount();
+  }).catch(() => {});
+}
+
+function calcCount() {
+  const denoms = [1, 5, 10, 50, 100, 200, 500, 1000];
+  let coinTotal = 0;
+  denoms.forEach(d => {
+    const qty = parseInt(document.getElementById('d' + d).value) || 0;
+    const sub = qty * d;
+    coinTotal += sub;
+    document.getElementById('s' + d).textContent = sub > 0 ? '$' + fmt(sub) : '—';
+  });
+
+  const safe  = parseFloat(document.getElementById('csafe').value)  || 0;
+  const petty = parseFloat(document.getElementById('cpetty').value) || 0;
+  const total = coinTotal + safe + petty;
+
+  document.getElementById('cr-total').textContent = '$' + fmt(total);
+
+  const diff = total - countBookBal;
+  const badge = document.getElementById('cr-diff-badge');
+  const row   = document.getElementById('cr-diff-row');
+  if (diff === 0) {
+    badge.textContent = '±0　平衡 ✓';
+    badge.className = 'diff-badge ok';
+    row.className = 'cr-row highlight diff-ok';
+  } else {
+    const sign = diff > 0 ? '+' : '';
+    badge.textContent = sign + fmt(diff) + '　差異 ✗';
+    badge.className = 'diff-badge ng';
+    row.className = 'cr-row highlight diff-ng';
+  }
+}
+
+function saveCount() {
+  const denoms = [1, 5, 10, 50, 100, 200, 500, 1000];
+  let coinTotal = 0;
+  const dData = {};
+  denoms.forEach(d => {
+    const qty = parseInt(document.getElementById('d' + d).value) || 0;
+    dData['d' + d] = qty;
+    coinTotal += qty * d;
+  });
+  const safe  = parseFloat(document.getElementById('csafe').value)  || 0;
+  const petty = parseFloat(document.getElementById('cpetty').value) || 0;
+  const total = coinTotal + safe + petty;
+  const note  = document.getElementById('cnote').value.trim();
+
+  const btn = document.getElementById('count-btn');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+
+  api('saveCashCount', { ...dData, safe, petty, total, note })
+    .then(r => {
+      if (r.success) {
+        const sign = r.diff >= 0 ? '+' : '';
+        toast('✓ 盤點已儲存！差異 ' + sign + fmt(r.diff));
+      } else {
+        toast('❌ ' + r.error);
+      }
+      btn.disabled = false;
+      btn.textContent = '儲存盤點記錄';
+    })
+    .catch(() => {
+      toast('❌ 連線失敗');
+      btn.disabled = false;
+      btn.textContent = '儲存盤點記錄';
+    });
+}
+
+// ── Month Labels ───────────────────────────
+function updMlbls() {
+  document.getElementById('lmlbl').textContent = lY + '年' + MNAMES[lM-1];
+  document.getElementById('rmlbl').textContent = rY + '年' + MNAMES[rM-1];
+  document.getElementById('dmlbl').textContent = dY + '年' + MNAMES[dM-1];
+}
+function chMonth(d) {
+  lM += d;
+  if (lM > 12) { lM = 1; lY++; }
+  if (lM < 1)  { lM = 12; lY--; }
+  updMlbls();
+  loadTxns();
+}
+function chRMonth(d) {
+  rM += d;
+  if (rM > 12) { rM = 1; rY++; }
+  if (rM < 1)  { rM = 12; rY--; }
+  updMlbls();
+  loadReport();
+}
+function chDMonth(d) {
+  dM += d;
+  if (dM > 12) { dM = 1; dY++; }
+  if (dM < 1)  { dM = 12; dY--; }
+  updMlbls();
+  loadDashboard();
+}
+
+// ── Transactions List ──────────────────────
+function loadTxns() {
+  const wrap = document.getElementById('txn-wrap');
+  const bar  = document.getElementById('lsbar-card');
+  wrap.innerHTML = '<div class="loading">載入中…</div>';
+  bar.style.display = 'none';
+
+  api('getTransactions', { year: lY, month: lM })
+    .then(txns => {
+      if (!txns || !txns.length) {
+        wrap.innerHTML = '<div class="card"><div class="empty">本月尚無記錄</div></div>';
+        return;
+      }
+      let ti = 0, te = 0;
+      const WDAYS = ['週日','週一','週二','週三','週四','週五','週六'];
+
+      // 先按日期排序：新→舊；同日按 rowIndex 降冪（晚輸入的在上）
+      const sorted = [...txns].sort((a, b) => {
+        if (a.dateISO !== b.dateISO) return a.dateISO < b.dateISO ? 1 : -1;
+        return (b.rowIndex || 0) - (a.rowIndex || 0);
+      });
+
+      // 分組
+      const groups = [];
+      const gMap = {};
+      sorted.forEach(t => {
+        const key = t.dateISO || t.date;
+        if (!gMap[key]) {
+          const g = { key, date: t.date, weekday: t.weekday, items: [], inc: 0, exp: 0 };
+          gMap[key] = g;
+          groups.push(g);
+        }
+        gMap[key].items.push(t);
+        const isOpening = /期初|結餘|上月|開帳/.test(t.description);
+        if (!isOpening) {
+          gMap[key].inc += t.income;
+          gMap[key].exp += t.expense;
+          ti += t.income; te += t.expense;
+        }
+      });
+
+      let html = '';
+      groups.forEach(g => {
+        const wd = (g.weekday !== undefined) ? WDAYS[g.weekday] : '';
+        const incTxt = g.inc ? `<span class="dh-inc">+${fmt(g.inc)}</span>` : '';
+        const expTxt = g.exp ? `<span class="dh-exp">−${fmt(g.exp)}</span>` : '';
+        html += `
+          <div class="day-group">
+            <div class="day-header">
+              <div class="day-header-left">
+                <span class="dh-date">${esc(g.date)}</span>
+                ${wd ? `<span class="dh-wday">${wd}</span>` : ''}
+              </div>
+              <div class="dh-sum">${incTxt}${expTxt}</div>
+            </div>
+            <div class="day-body">`;
+        g.items.forEach(t => {
+          const isI  = t.income > 0;
+          const num  = isI ? t.income : t.expense;
+          const cls  = isI ? 'i' : 'e';
+          const sign = isI ? '+' : '−';
+          const tags = [t.note3, t.note2].filter(Boolean).join(' · ');
+          const catCol = CAT_COLOR[t.note3] || '#9e9e9e';
+          const bgTint = t.note3 ? hexA(catCol, 0.10) : 'transparent';
+          const bordCol = t.note3 ? hexA(catCol, 0.35) : 'transparent';
+          html += `
+            <div class="txn" style="background:${bgTint};border-left:3px solid ${bordCol};">
+              <div class="txn-info">
+                <div class="txn-desc">${esc(t.description)}</div>
+                ${tags ? `<div class="txn-tag">${esc(tags)}</div>` : ''}
+              </div>
+              <div class="txn-right">
+                <div class="txn-amt ${cls}">${sign}${fmt(num)}</div>
+                <div class="txn-bal">餘 ${fmt(t.balance)}</div>
+              </div>
+            </div>`;
+        });
+        html += `</div></div>`;
+      });
+      wrap.innerHTML = html;
+
+      const net = ti - te;
+      document.getElementById('ls-i').textContent = '+' + fmt(ti);
+      document.getElementById('ls-e').textContent = '−' + fmt(te);
+      const nel = document.getElementById('ls-n');
+      nel.textContent = (net >= 0 ? '+' : '−') + fmt(Math.abs(net));
+      nel.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
+      bar.style.display = 'block';
+    })
+    .catch(() => {
+      wrap.innerHTML = '<div class="empty">載入失敗</div>';
+    });
+}
+
+// ── Monthly Report ─────────────────────────
+function loadReport() {
+  const wrap = document.getElementById('report-wrap');
+  wrap.innerHTML = '<div class="loading">載入中…</div>';
+
+  api('getMonthlySummary', { year: rY, month: rM })
+    .then(d => {
+      if (!d || d.count === 0) {
+        wrap.innerHTML = '<div class="empty">本月尚無記錄</div>';
+        return;
+      }
+      const nc  = d.netFlow >= 0 ? 'pos' : 'neg';
+      const ns  = d.netFlow >= 0 ? '+' : '−';
+      const nv  = Math.abs(d.netFlow);
+      let html = `
+        <div class="sgrid">
+          <div class="sc">
+            <div class="slbl">本月收入</div>
+            <div class="sval inc">+${fmt(d.totalIncome)}</div>
+          </div>
+          <div class="sc">
+            <div class="slbl">本月支出</div>
+            <div class="sval exp">−${fmt(d.totalExpense)}</div>
+          </div>
+          <div class="sc full">
+            <div class="slbl">本月現金淨流量</div>
+            <div class="sval ${nc}">${ns}${fmt(nv)}</div>
+          </div>
+          <div class="sc full">
+            <div class="slbl">目前現金餘額</div>
+            <div class="sval">${fmt(d.currentBalance)}</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="sec-title">分類明細</div>`;
+
+      const te = d.totalExpense || 1;
+      const ti = d.totalIncome  || 1;
+      Object.entries(d.byCat).forEach(([cat, v]) => {
+        if (!v.income && !v.expense) return;
+        const col = CAT_COLOR[cat] || '#9e9e9e';
+        const pctE = Math.round((v.expense / te) * 100);
+        const pctI = Math.round((v.income  / ti) * 100);
+        html += `
+          <div class="catrow">
+            <div class="catrow-top">
+              <div class="cdot" style="background:${col}"></div>
+              <div class="cname">${esc(cat)}</div>
+              <div class="camts">
+                ${v.income  ? `<div class="ci">+${fmt(v.income)}</div>` : ''}
+                ${v.expense ? `<div class="ce">−${fmt(v.expense)}</div>` : ''}
+              </div>
+            </div>
+            ${v.income  ? `<div class="pbar"><div class="pfill" style="width:${pctI}%;background:${col}"></div></div>` : ''}
+            ${v.expense ? `<div class="pbar"${v.income?' style="margin-top:4px"':''}><div class="pfill" style="width:${pctE}%;background:${col}"></div></div>` : ''}
+          </div>`;
+      });
+      html += '</div>';
+      wrap.innerHTML = html;
+    })
+    .catch(() => {
+      wrap.innerHTML = '<div class="empty">載入失敗</div>';
+    });
+}
+
+// ── Dashboard ──────────────────────────────
+function loadDashboard() {
+  const wrap = document.getElementById('dash-wrap');
+  wrap.innerHTML = '<div class="loading">載入中…</div>';
+
+  api('getDashboard', { year: dY, month: dM })
+    .then(d => {
+      if (!d || d.count === 0) {
+        wrap.innerHTML = '<div class="no-data-dash">本月尚無記錄</div>';
+        return;
+      }
+
+      const balAmt  = fmt(d.currentBalance);
+      const netCls  = d.netProfit >= 0 ? 'pos' : 'neg';
+      const netSign = d.netProfit >= 0 ? '+' : '−';
+      const netAbs  = fmt(Math.abs(d.netProfit));
+
+      // ── KPI Cards ────────────────────────
+      let html = `
+        <div class="dash-bal">
+          <div>
+            <div class="db-lbl">目前現金餘額</div>
+            <div class="db-amt">$${balAmt}</div>
+          </div>
+          <button class="db-ref" onclick="loadDashboard()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
+              <path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kl">本月總營業額</div>
+            <div class="kv inc">+${fmt(d.revenue)}</div>
+            <div class="ksub">珍北平收入</div>
+          </div>
+          <div class="kpi">
+            <div class="kl">固定支出</div>
+            <div class="kv exp">−${fmt(d.fixedExp)}</div>
+            <div class="ksub">珍北平固定支出</div>
+          </div>
+          <div class="kpi full">
+            <div class="kl">本月淨利（營業額 − 固定支出）</div>
+            <div class="kv ${netCls}">${netSign}${netAbs}</div>
+            ${d.otherIncome ? `<div class="ksub">另有家庭收入 +${fmt(d.otherIncome)}</div>` : ''}
+          </div>
+        </div>`;
+
+      // ── Pie Chart ─────────────────────────
+      if (d.netProfit <= 0) {
+        html += `<div class="pie-wrap">
+          <div class="sec-title">淨利分配</div>
+          <div style="text-align:center;padding:20px 0;color:var(--red);font-weight:700;font-size:14px">
+            本月淨利為負，無法顯示分配圓餅圖
+          </div>
+        </div>`;
+      } else {
+        // Build segments
+        const segs = [];
+        DIST_CATS.forEach(c => {
+          if (d.dist[c] > 0) segs.push({ label: c, value: d.dist[c], color: CAT_COLOR[c] });
+        });
+        const remainCol = d.remaining >= 0 ? REMAIN_COL : REMAIN_NEG_COL;
+        segs.push({ label: d.remaining >= 0 ? '剩餘淨利' : '超支', value: Math.abs(d.remaining), color: remainCol });
+
+        const total = segs.reduce((s, x) => s + x.value, 0) || 1;
+
+        html += `<div class="pie-wrap">
+          <div class="sec-title">淨利分配</div>
+          <div class="pie-canvas-wrap">
+            <canvas id="pie-canvas" width="200" height="200"></canvas>
+          </div>
+          <div class="pie-legend">`;
+
+        segs.forEach(s => {
+          const pct = Math.round((s.value / total) * 100);
+          const isRemain = s.label === '剩餘淨利' || s.label === '超支';
+          const rowCls = isRemain ? (d.remaining >= 0 ? 'pie-leg-row pie-remaining' : 'pie-leg-row pie-remaining-neg') : 'pie-leg-row';
+          const sign = (s.label === '剩餘淨利') ? '+' : (s.label === '超支' ? '−' : '−');
+          html += `
+            <div class="${rowCls}">
+              <div class="pie-dot" style="background:${s.color}"></div>
+              <div class="pie-name">${esc(s.label)}</div>
+              <div class="pie-right">
+                <div class="pie-amt" style="color:${s.color}">${sign}${fmt(s.value)}</div>
+                <div class="pie-pct">${pct}%</div>
+              </div>
+            </div>`;
+        });
+
+        html += `</div></div>`;
+
+        // Store segs for canvas drawing
+        wrap.innerHTML = html;
+        drawDonut('pie-canvas', segs, netSign + fmt(Math.abs(d.netProfit)));
+        return;
+      }
+
+      wrap.innerHTML = html;
+    })
+    .catch(() => {
+      document.getElementById('dash-wrap').innerHTML = '<div class="no-data-dash">載入失敗，請重試</div>';
+    });
+}
+
+function drawDonut(canvasId, segs, centerText) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h / 2;
+  const outerR = Math.min(cx, cy) - 6;
+  const innerR = outerR * 0.52;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const total = segs.reduce((s, x) => s + x.value, 0);
+  if (total <= 0) return;
+
+  let angle = -Math.PI / 2;
+  segs.forEach(seg => {
+    if (seg.value <= 0) return;
+    const sweep = (seg.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, angle, angle + sweep);
+    ctx.arc(cx, cy, innerR, angle + sweep, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    ctx.strokeStyle = '#f2f2f7';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    angle += sweep;
+  });
+
+  // center text
+  if (centerText) {
+    const lines = centerText.split('\n');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lineH = 16;
+    const startY = cy - (lines.length - 1) * lineH / 2 - 8;
+    ctx.font = 'bold 14px -apple-system, "PingFang TC", sans-serif';
+    ctx.fillStyle = '#1c1c1e';
+    ctx.fillText(centerText, cx, cy - 7);
+    ctx.font = '11px -apple-system, "PingFang TC", sans-serif';
+    ctx.fillStyle = '#8e8e93';
+    ctx.fillText('本月淨利', cx, cy + 10);
+  }
+}
+
+// ── Toast ──────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── PWA：註冊 Service Worker ───
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then((reg) => console.log('[PWA] SW 已註冊', reg.scope))
+      .catch((err) => console.warn('[PWA] SW 註冊失敗', err));
+  });
+}
+</script>
+</body>
+</html>
