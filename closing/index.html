@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>珍北平 — 打烊結算系統</title>
+
+<!-- PWA / Favicon（RealFaviconGenerator 產出，路徑用相對路徑以相容 GitHub Pages 子路徑） -->
+<link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96">
+<link rel="shortcut icon" href="./favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#F5EFE2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="打烊系統">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   珍北平 打烊結算 — v2 紙本帳冊風
+   ★ 本輪只改 <style> 與必要 HTML 結構 / 輔助 JS。
+     所有欄位 id、JS 常數、計算函式、送出格式完全保留。
+   ============================================================ */
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  /* ★ 改動：象牙紙本色系（不再是後台深色 app） */
+  --paper:       #F5EFE2;  /* 主底：象牙黃 */
+  --paper-2:     #EEE6D3;  /* 次底 */
+  --paper-line:  #D9CFB8;  /* 格線 */
+  --paper-dark:  #C9BC9C;  /* 深格線 */
+  --ink:         #1A1713;  /* 墨色（正文） */
+  --ink-2:       #3B342A;
+  --ink-mute:    #7A715F;  /* 次要文字 */
+  --ink-faint:   #B2A890;  /* 最弱文字 */
+
+  /* 強調色：偏正紅印章 + 青墨（舊式收據感） */
+  --stamp:       #B83A2F;  /* 警示 / 印章紅 */
+  --stamp-soft:  rgba(184,58,47,0.08);
+  --teal:        #2E6B6B;  /* 青墨（主要互動色） */
+  --teal-soft:   rgba(46,107,107,0.09);
+  --olive:       #8A7A2C;  /* 暖黃綠 */
+  --amber:       #C78A18;  /* 印鑑金 */
+
+  --ok:          #3C8C58;  /* 相符綠（比原色更沉） */
+  --ok-bg:       rgba(60,140,88,0.11);
+  --warn:        #C78A18;
+  --warn-bg:     rgba(199,138,24,0.13);
+  --short:       #B83A2F;
+  --short-bg:    rgba(184,58,47,0.11);
+
+  --serif:       'Noto Serif TC', 'Noto Sans TC', serif;
+  --sans:        'Noto Sans TC', -apple-system, sans-serif;
+  --mono:        'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --radius:      4px;   /* 紙本風用極小圓角 */
+  --radius-sm:   3px;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 120px;
+  line-height: 1.45;
+  background-color: var(--paper);
+  /* ★ 改動：手寫紙底紋 — 細點 + 極淺網格 */
+  background-image:
+    radial-gradient(rgba(26,23,19,0.055) 1px, transparent 1px),
+    linear-gradient(rgba(217,207,184,0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(217,207,184,0.35) 1px, transparent 1px);
+  background-size: 22px 22px, 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0, 0 0;
+}
+
+/* ============================================================
+   頂部 — 帳冊表頭風
+   ============================================================ */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background:
+    linear-gradient(180deg, rgba(245,239,226,0.97) 0%, rgba(245,239,226,0.9) 100%);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 2px double var(--paper-dark);
+  padding: 14px 16px 0;
+}
+.header-top {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 10px;
+}
+.logo-block { display: flex; align-items: baseline; gap: 10px; }
+.logo {
+  font-family: var(--serif);
+  font-size: 1.6rem; font-weight: 900;
+  color: var(--ink); letter-spacing: 6px;
+  position: relative;
+}
+/* ★ 紅印章效果在 logo 上 */
+.logo::after {
+  content: '印';
+  position: absolute; right: -26px; top: -4px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; color: var(--stamp); font-weight: 700;
+  border: 1.5px solid var(--stamp); border-radius: 3px;
+  transform: rotate(-8deg);
+  font-family: var(--serif);
+  opacity: 0.85;
+}
+.logo-sub {
+  font-family: var(--serif);
+  font-size: 0.72rem; color: var(--ink-mute);
+  font-weight: 500; letter-spacing: 3px;
+  padding-bottom: 4px;
+}
+.header-date {
+  font-size: 0.78rem; color: var(--ink-2);
+  text-align: right; line-height: 1.3;
+  font-family: var(--mono);
+}
+.header-date .wd {
+  display: inline-block; margin-top: 2px;
+  font-family: var(--serif); font-weight: 700;
+  color: var(--stamp); font-size: 0.72rem;
+  letter-spacing: 2px;
+}
+
+/* Tab — 紙本分隔標籤 */
+.tabs {
+  display: flex; gap: 0;
+  margin-bottom: -1px;
+}
+.tab {
+  background: none; border: none;
+  padding: 10px 18px 11px;
+  font-family: var(--serif);
+  font-size: 0.98rem; font-weight: 700;
+  color: var(--ink-mute);
+  border: 1px solid transparent;
+  border-bottom: none;
+  cursor: pointer; transition: all 0.15s;
+  letter-spacing: 1px;
+  position: relative;
+  border-radius: 6px 6px 0 0;
+}
+.tab:not(.active):active { background: rgba(0,0,0,0.03); }
+.tab.active {
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--paper-dark);
+  border-bottom: 1px solid var(--paper);
+}
+.tab.active::before {
+  content: ''; position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 3px; background: var(--stamp);
+  border-radius: 3px 3px 0 0;
+}
+
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.22s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.container { padding: 14px 12px; max-width: 640px; margin: 0 auto; }
+
+/* ============================================================
+   卡片 — 紙本區塊，用雙線 / 標籤區隔
+   ============================================================ */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--paper-dark);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 2px 6px rgba(120,100,60,0.08);
+  position: relative;
+}
+.card-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer; user-select: none;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(46,107,107,0.05) 0 6px,
+      transparent 6px 14px
+    ),
+    var(--paper-2);
+  border-bottom: 1px solid var(--paper-dark);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.card.closed .card-head { border-bottom: none; border-radius: var(--radius); }
+.card-emoji { font-size: 1.05rem; }
+.card-title {
+  font-family: var(--serif);
+  font-size: 1rem; font-weight: 900;
+  flex: 1; letter-spacing: 2px;
+  color: var(--ink);
+}
+.card-arrow {
+  color: var(--ink-mute); font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+.card.closed .card-arrow { transform: rotate(-90deg); }
+.card.closed .card-body { display: none; }
+.card-body { padding: 14px; }
+
+/* ============================================================
+   欄位
+   ============================================================ */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field-label {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--serif);
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--ink-2); margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+.field-label::before {
+  content: ''; width: 3px; height: 12px;
+  background: var(--teal); border-radius: 1px;
+}
+
+.field-input, .field-select {
+  width: 100%; background: #FFFDF6;
+  border: 1px solid var(--paper-dark); border-radius: var(--radius-sm);
+  padding: 11px 13px; font-size: 1.02rem; color: var(--ink);
+  font-family: var(--sans); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  font-variant-numeric: tabular-nums;
+}
+.field-input::placeholder, .field-select::placeholder { color: var(--ink-faint); }
+.field-input:focus, .field-select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-soft);
+  background: #FFF;
+}
+.field-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath d='M2 4.5l5 5 5-5' fill='none' stroke='%237A715F' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 36px;
+}
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ============================================================
+   ★ 改動：分店選擇器 — 橫向 chip 列
+   - 10 間店全部在一排，手指橫向滑；店面/餐車用顏色區分
+   - 保留 hidden <select id="fieldStore"> 給後端
+   - 最近使用店會用深色印鑑標記 + 置頂
+   ============================================================ */
+.store-bar-wrap { position: relative; margin-bottom: 14px; }
+.store-bar {
+  display: flex; gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.store-bar::-webkit-scrollbar { display: none; }
+.store-chip {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 84px; min-height: 52px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--paper-dark);
+  border-radius: 6px;
+  background: #FFFDF6;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+  position: relative;
+  font-family: var(--serif);
+}
+.store-chip:active { transform: scale(0.96); }
+.store-chip .chip-icon { font-size: 1.1rem; line-height: 1; }
+.store-chip .chip-name {
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--ink); white-space: nowrap;
+  letter-spacing: 1px;
+}
+.store-chip.truck {
+  background: var(--teal-soft);
+  border-color: rgba(46,107,107,0.3);
+}
+.store-chip.truck .chip-name { color: var(--teal); }
+.store-chip.selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+.store-chip.selected .chip-name { color: var(--paper); }
+.store-chip.selected .chip-icon { filter: invert(1) brightness(2); }
+.store-chip.recent::after {
+  content: '常用';
+  position: absolute; top: -6px; right: -6px;
+  font-size: 0.58rem; font-weight: 900;
+  background: var(--stamp); color: #FFF;
+  padding: 1px 5px; border-radius: 3px;
+  letter-spacing: 1px;
+  transform: rotate(3deg);
+  font-family: var(--sans);
+  box-shadow: 0 1px 2px rgba(184,58,47,0.3);
+}
+
+/* ============================================================
+   ★ 改動：產品填寫 — 紙本橫排表格式
+   - 一列 = 一個品項，左邊名稱，右邊 6 欄橫排小格
+   - 移除展開/收合，所有欄位一次顯示
+   - tabindex 依 DISPLAY_FIELDS 順序（進貨→昨剩→買十送一→外送→報廢→今剩）
+     手機 Enter 會順著往下一格走
+   - 定價放品項名下方小字（不佔寬度）
+   ============================================================ */
+.products-table {
+  background: #FFFDF6;
+  border: 1px solid var(--paper-dark);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.products-header {
+  display: grid;
+  grid-template-columns: 78px repeat(6, 1fr);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  /* ★ 改：移除 sticky 避免跑版 */
+}
+.products-header > div {
+  padding: 8px 2px;
+  text-align: center;
+  border-right: 1px solid rgba(245,239,226,0.15);
+  white-space: nowrap;
+  line-height: 1.1;
+}
+.products-header > div:last-child { border-right: none; }
+.products-header .ph-name { text-align: left; padding-left: 10px; font-size: 0.7rem; letter-spacing: 1px; }
+.products-header .ph-em { color: #F0C870; }
+
+/* ★ 模式徽章：餐車/內新店特殊規則提示 */
+.mode-banner {
+  padding: 10px 14px;
+  font-family: var(--serif);
+  font-size: 0.82rem; font-weight: 700;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid var(--paper-dark);
+  display: flex; align-items: center; gap: 8px;
+}
+.mode-banner.truck {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border-left: 4px solid var(--teal);
+}
+.mode-banner.nx {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-left: 4px solid var(--warn);
+}
+.mode-banner .mb-icon { font-size: 1rem; }
+.mode-banner .mb-tag {
+  font-size: 0.68rem;
+  background: currentColor; color: #FFFDF6;
+  padding: 2px 8px; border-radius: 3px;
+  letter-spacing: 2px;
+}
+.mode-banner .mb-tag span { color: #FFFDF6; }
+
+/* 餐車模式：隱藏昨剩欄 */
+.products-table.truck-mode .products-header .ph-prev,
+.products-table.truck-mode .product-row .cell-prev { display: none; }
+.products-table.truck-mode .products-header,
+.products-table.truck-mode .product-row { grid-template-columns: 78px repeat(5, 1fr); }
+
+.product-row {
+  display: grid;
+  grid-template-columns: 78px repeat(6, 1fr);
+  border-top: 1px solid var(--paper-dark);
+  min-height: 72px;
+  transition: background 0.15s;
+}
+.product-row.disabled { opacity: 0.35; pointer-events: none; background: repeating-linear-gradient(45deg, transparent 0 8px, rgba(0,0,0,0.04) 8px 10px); }
+.product-row.has-sold { background: var(--warn-bg); }
+
+.product-name-cell {
+  padding: 8px 8px 8px 10px;
+  border-right: 1px solid var(--paper-dark);
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 3px;
+  background: var(--paper-2);
+  min-width: 0;
+}
+.product-name {
+  font-family: var(--serif);
+  font-size: 0.95rem; font-weight: 900;
+  color: var(--ink);
+  letter-spacing: 1px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.product-price {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--stamp);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.product-sold {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--teal);
+  font-weight: 700;
+  line-height: 1;
+}
+.product-sold:empty { display: none; }
+
+.cell {
+  position: relative;
+  border-right: 1px solid var(--paper-line);
+  background: #FFFDF6;
+}
+.cell:last-child { border-right: none; }
+.cell input {
+  width: 100%; height: 100%;
+  min-height: 72px;
+  border: 0; background: transparent;
+  font-family: var(--mono);
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  outline: none;
+  padding: 4px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+  -moz-appearance: textfield;
+}
+.cell input::placeholder { color: transparent; }
+.cell input::-webkit-inner-spin-button,
+.cell input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.cell input:focus {
+  background: #FFF5C0;
+  box-shadow: inset 0 0 0 2px var(--teal);
+}
+.cell input:not(:placeholder-shown) { color: var(--stamp); }
+
+/* 特殊欄強調：今剩 (todayRemain) 深色底讓員工記得這是「收攤時才填」 */
+.cell.cell-today { background: var(--paper-2); }
+.cell.cell-today input:not(:placeholder-shown) { color: var(--ink); }
+
+/* 小提示：順序標號（1-6）浮在輸入框左上角 */
+.cell::before {
+  content: attr(data-step);
+  position: absolute; top: 2px; left: 4px;
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: var(--ink-faint);
+  font-weight: 700;
+  pointer-events: none;
+}
+.cell input:focus ~ span.cell-hint,
+.cell input:not(:placeholder-shown) ~ span.cell-hint { opacity: 0; }
+
+/* ============================================================
+   帶回區
+   ============================================================ */
+.return-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px dashed var(--paper-dark);
+}
+.return-item:last-child { border-bottom: none; }
+.return-item-name {
+  font-family: var(--serif);
+  font-size: 0.9rem; font-weight: 700; flex: 1;
+  letter-spacing: 0.5px;
+}
+.return-item-input {
+  width: 80px; background: #FFFDF6;
+  border: 1px solid var(--paper-dark); border-radius: var(--radius-sm);
+  padding: 9px; font-size: 1.05rem; font-weight: 700; color: var(--ink);
+  font-family: var(--mono); text-align: center; outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.return-item-input::-webkit-inner-spin-button,
+.return-item-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.return-item-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+.return-hint {
+  font-size: 0.78rem; color: var(--ink-mute);
+  padding: 2px 2px 10px;
+  line-height: 1.55;
+}
+
+/* ============================================================
+   實際錢盒
+   ============================================================ */
+.actual-cash-wrap {
+  background:
+    repeating-linear-gradient(135deg, rgba(184,58,47,0.05) 0 10px, transparent 10px 20px),
+    #FFFDF6;
+  border: 1.5px solid var(--stamp);
+  border-radius: var(--radius);
+  padding: 12px 14px 14px;
+  margin-top: 14px;
+  position: relative;
+}
+.actual-cash-wrap::before {
+  content: '實點'; position: absolute;
+  top: -10px; left: 12px;
+  background: var(--paper);
+  padding: 0 8px;
+  font-family: var(--serif); font-weight: 900;
+  color: var(--stamp); font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+.actual-cash-wrap .field-label { color: var(--stamp); }
+.actual-cash-wrap .field-label::before { background: var(--stamp); }
+.actual-cash-wrap .field-input {
+  border-color: var(--stamp);
+  font-size: 1.5rem; font-weight: 800;
+  font-family: var(--mono); letter-spacing: 2px;
+  color: var(--stamp);
+  background: #FFF;
+}
+.actual-cash-wrap .field-input:focus {
+  box-shadow: 0 0 0 3px var(--stamp-soft);
+}
+.actual-cash-hint { font-size: 0.74rem; color: var(--ink-mute); margin-top: 6px; line-height: 1.5; }
+
+/* ============================================================
+   ★ 改動：即時結算 — 帳冊合計欄風 + 對帳磅秤
+   ============================================================ */
+.summary {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 16px 16px 18px;
+  margin-bottom: 14px;
+  position: relative;
+  box-shadow: 0 3px 0 var(--paper-dark), 0 6px 16px rgba(120,100,60,0.12);
+}
+.summary-head {
+  font-family: var(--serif);
+  font-size: 0.9rem; font-weight: 900;
+  color: var(--ink);
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px double var(--paper-dark);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.summary-head::before { content: '◆ 即時結算 ◆'; }
+.summary-head-live {
+  font-size: 0.62rem; color: var(--teal);
+  letter-spacing: 2px; font-weight: 700;
+  font-family: var(--mono);
+  display: flex; align-items: center; gap: 5px;
+}
+.summary-head-live::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--teal); animation: pulse 1.8s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+.s-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--paper-dark);
+}
+.s-row:last-child { border-bottom: none; }
+.s-label { font-size: 0.88rem; color: var(--ink-2); font-family: var(--serif); letter-spacing: 0.5px; }
+.s-value {
+  font-size: 1rem; font-weight: 700;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.s-row.big { padding: 8px 0; }
+.s-row.big .s-label { color: var(--ink); font-weight: 900; font-size: 0.95rem; }
+.s-row.big .s-value { color: var(--ink); font-size: 1.25rem; font-weight: 800; }
+.s-row.total {
+  margin-top: 8px; padding-top: 10px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-2);
+  margin-left: -16px; margin-right: -16px;
+  padding-left: 16px; padding-right: 16px;
+}
+.s-row.total .s-label {
+  color: var(--ink); font-weight: 900; font-size: 1rem;
+  font-family: var(--serif); letter-spacing: 1px;
+}
+.s-row.total .s-value { font-size: 1.55rem; font-weight: 900; color: var(--ink); }
+
+/* ★ 改動：對帳 hero — 磅秤天平造型 */
+.diff-hero {
+  margin-top: 14px;
+  padding: 14px 14px 16px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--paper-dark);
+  background: #FFFDF6;
+  transition: all 0.25s;
+  position: relative;
+}
+.diff-hero-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px dashed var(--paper-dark);
+}
+.diff-hero-label {
+  font-family: var(--serif);
+  font-size: 0.85rem; font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--ink-mute);
+}
+.diff-hero-actual {
+  font-size: 0.76rem; color: var(--ink-mute);
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  text-align: right; line-height: 1.4;
+}
+.diff-hero-actual b { color: var(--ink); font-weight: 800; }
+
+.diff-hero-body {
+  display: flex; align-items: center; gap: 14px;
+}
+.diff-hero-icon {
+  width: 52px; height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif);
+  font-size: 1.55rem; font-weight: 900;
+  background: var(--paper-2);
+  color: var(--ink-mute);
+  border: 2px solid var(--paper-dark);
+}
+.diff-hero-main { flex: 1; min-width: 0; }
+.diff-hero-result {
+  font-family: var(--mono);
+  font-size: 2rem; font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.diff-hero-note {
+  font-size: 0.78rem;
+  color: var(--ink-mute);
+  margin-top: 4px; line-height: 1.45;
+}
+
+/* state: idle */
+.diff-hero.state-idle { border-style: dashed; }
+.diff-hero.state-idle .diff-hero-result { font-size: 1rem; color: var(--ink-mute); font-family: var(--serif); font-weight: 700; }
+
+/* state: match */
+.diff-hero.state-match {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+.diff-hero.state-match .diff-hero-label { color: var(--ok); }
+.diff-hero.state-match .diff-hero-result { color: var(--ok); }
+.diff-hero.state-match .diff-hero-icon {
+  background: var(--ok); color: #FFF; border-color: var(--ok);
+}
+
+/* state: short — 強化 */
+.diff-hero.state-short {
+  border: 2px solid var(--short);
+  background:
+    repeating-linear-gradient(45deg, rgba(184,58,47,0.05) 0 8px, transparent 8px 16px),
+    var(--short-bg);
+  animation: shortPulse 1.8s ease-in-out infinite;
+}
+@keyframes shortPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(184,58,47,0); }
+  50%     { box-shadow: 0 0 0 6px rgba(184,58,47,0.18); }
+}
+.diff-hero.state-short .diff-hero-label { color: var(--short); letter-spacing: 4px; }
+.diff-hero.state-short .diff-hero-result { color: var(--short); font-weight: 900; }
+.diff-hero.state-short .diff-hero-icon {
+  background: var(--short); color: #FFF;
+  border-color: var(--short);
+  box-shadow: 0 0 0 4px rgba(184,58,47,0.2);
+}
+.diff-hero.state-short .diff-hero-note { color: var(--short); font-weight: 700; }
+
+/* state: over */
+.diff-hero.state-over {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+.diff-hero.state-over .diff-hero-label { color: var(--warn); }
+.diff-hero.state-over .diff-hero-result { color: var(--warn); }
+.diff-hero.state-over .diff-hero-icon {
+  background: var(--warn); color: #FFF; border-color: var(--warn);
+}
+
+.val-pos  { color: var(--ok) !important; }
+.val-neg  { color: var(--short) !important; }
+.val-zero { color: var(--ok) !important; }
+.val-blue { color: var(--teal) !important; }
+
+/* ============================================================
+   耗材
+   ============================================================ */
+.cons-item {
+  background: #FFFDF6;
+  border: 1px solid var(--paper-dark);
+  border-radius: var(--radius);
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s;
+}
+.cons-item.has-qty {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+.cons-num-tag {
+  width: 22px; flex-shrink: 0;
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--ink-faint); font-weight: 700;
+  text-align: right;
+}
+.cons-name {
+  font-family: var(--serif);
+  font-size: 0.92rem; font-weight: 700;
+  flex-shrink: 0; white-space: nowrap;
+  min-width: 108px;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+.cons-qty-input {
+  width: 70px; flex-shrink: 0;
+  background: #FFF; border: 1px solid var(--paper-dark); border-radius: 4px;
+  padding: 10px 4px; font-size: 1.2rem; font-weight: 800; color: var(--ink);
+  font-family: var(--mono); text-align: center; outline: none;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.15s;
+  -moz-appearance: textfield;
+}
+.cons-qty-input::-webkit-inner-spin-button,
+.cons-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.cons-qty-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); background: #FFF5C0; }
+.cons-qty-input:not(:placeholder-shown) { color: var(--stamp); font-weight: 900; }
+.cons-note-input {
+  flex: 1; min-width: 0;
+  background: #FFFDF6; border: 1px solid var(--paper-dark); border-radius: 4px;
+  padding: 9px 10px; font-size: 0.85rem; color: var(--ink-2);
+  font-family: var(--sans); outline: none;
+  transition: border-color 0.15s;
+}
+.cons-note-input:focus { border-color: var(--teal); box-shadow: 0 0 0 2px var(--teal-soft); color: var(--ink); }
+
+/* ★ 耗材分類標頭 */
+.cons-group-head {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 2px 8px;
+  padding-bottom: 4px;
+}
+.cons-group-head:first-child { margin-top: 2px; }
+.cons-group-icon {
+  font-size: 1.05rem;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ink); color: var(--paper);
+  border-radius: 4px;
+}
+.cons-group-label {
+  font-family: var(--serif);
+  font-size: 0.92rem; font-weight: 900;
+  color: var(--ink); letter-spacing: 3px;
+  white-space: nowrap;
+}
+.cons-group-line {
+  flex: 1; height: 1px;
+  background: repeating-linear-gradient(90deg, var(--paper-dark) 0 4px, transparent 4px 8px);
+}
+
+.cons-count-box {
+  text-align: center; padding: 16px;
+  background: var(--paper-2);
+  border: 1.5px dashed var(--teal);
+  border-radius: var(--radius); margin-top: 10px;
+}
+.cons-count-label {
+  font-family: var(--serif);
+  font-size: 0.8rem; font-weight: 900; color: var(--teal);
+  letter-spacing: 3px; margin-bottom: 6px;
+}
+.cons-count-num { font-size: 1.45rem; font-weight: 900; font-family: var(--mono); color: var(--ink); }
+.cons-count-hint { font-size: 0.74rem; color: var(--ink-mute); margin-top: 4px; }
+
+/* ============================================================
+   底部按鈕
+   ============================================================ */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background:
+    linear-gradient(180deg, rgba(245,239,226,0.6), rgba(245,239,226,0.96) 40%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 2px double var(--paper-dark);
+  padding: 14px 14px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+.bottom-inner { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; }
+.btn-clear {
+  background: #FFFDF6; border: 1.5px solid var(--paper-dark);
+  border-radius: var(--radius); padding: 14px 22px;
+  font-size: 0.95rem; font-weight: 700; color: var(--ink-mute);
+  font-family: var(--serif); letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-clear:active { background: var(--paper-2); transform: scale(0.97); }
+.btn-submit {
+  flex: 1;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 14px;
+  font-size: 1.05rem; font-weight: 900;
+  font-family: var(--serif); letter-spacing: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  position: relative;
+  box-shadow: 0 3px 0 var(--paper-dark), 0 5px 14px rgba(0,0,0,0.2);
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.btn-submit::before {
+  content: '✦'; color: var(--stamp); font-size: 0.9rem;
+}
+.btn-submit:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--paper-dark);
+}
+.btn-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.spinner {
+  display: none; width: 18px; height: 18px;
+  border: 2.5px solid rgba(245,239,226,0.3); border-top-color: var(--paper);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   Modal
+   ============================================================ */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,23,19,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center; justify-content: center; padding: 24px;
+}
+.modal-bg.show { display: flex; animation: fadeIn 0.18s ease; }
+.modal {
+  background: var(--paper); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 28px 22px 22px;
+  max-width: 360px; width: 100%; text-align: center;
+  box-shadow: 0 6px 0 var(--paper-dark), 0 10px 30px rgba(0,0,0,0.3);
+}
+.modal-icon { font-size: 2.6rem; margin-bottom: 10px; }
+.modal-title {
+  font-family: var(--serif); font-size: 1.1rem; font-weight: 900;
+  margin-bottom: 6px; letter-spacing: 2px; color: var(--ink);
+}
+.modal-msg { font-size: 0.9rem; color: var(--ink-mute); line-height: 1.6; margin-bottom: 20px; }
+.modal-btn {
+  background: var(--ink); color: var(--paper);
+  border: none; border-radius: var(--radius);
+  padding: 12px 32px; font-size: 0.96rem; font-weight: 900;
+  font-family: var(--serif); cursor: pointer;
+  letter-spacing: 3px;
+}
+.modal-btn:active { transform: scale(0.97); }
+
+/* ============================================================
+   RWD
+   ============================================================ */
+/* ★ 改動：手機滿版 — 卡片貼螢幕左右邊，移除左右 padding、去掉卡片左右框與圓角，
+   讓畫面看起來像原生手機 App 的 section 排版，而不是飄在紙底上的卡片。 */
+@media (max-width: 640px) {
+  /* ★ 手機版：卡片上下貼邊（App 感），但內部有舒適呼吸 */
+  .container { padding: 10px 0 0; }
+  .card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 8px;
+    box-shadow: none;
+    border-top: 1px solid var(--paper-dark);
+    border-bottom: 1px solid var(--paper-dark);
+  }
+  .card-head { border-radius: 0 !important; padding: 12px 16px; }
+  .card.closed .card-head { border-radius: 0; }
+  /* ★ card-body 保留 14px 呼吸，讓內容不要壓到螢幕邊 */
+  .card-body { padding: 14px 16px; }
+  .header { padding: 14px 16px 0; }
+  .card:last-child { margin-bottom: 0; }
+  .bottom-bar { padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 380px) {
+  html { font-size: 15px; }
+  .product-name { font-size: 0.88rem; }
+  .product-name-cell { padding: 6px 4px 6px 8px; }
+  .products-header, .product-row { grid-template-columns: 66px repeat(6, 1fr); }
+  .products-table.truck-mode .products-header,
+  .products-table.truck-mode .product-row { grid-template-columns: 66px repeat(5, 1fr); }
+  .cell input { font-size: 1.1rem; min-height: 68px; }
+  .cons-name { min-width: 94px; font-size: 0.86rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header class="header">
+  <div class="header-top">
+    <div class="logo-block">
+      <span class="logo">珍北平</span>
+      <span class="logo-sub">打烊結算帳冊</span>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="closing" onclick="switchTab('closing')">打烊結算</button>
+    <button class="tab" data-tab="consumables" onclick="switchTab('consumables')">耗材回報</button>
+  </div>
+</header>
+
+<!-- ===== TAB 1：打烊結算 ===== -->
+<div class="page active" id="page-closing">
+<div class="container">
+
+  <!-- 基本資料 -->
+  <div class="card" id="cardBasic">
+    <div class="card-head">
+      <span class="card-emoji">📋</span><span class="card-title">基本資料</span>
+    </div>
+    <div class="card-body">
+      <!-- ★ 分店 chip bar -->
+      <div class="field">
+        <label class="field-label">分店</label>
+        <div class="store-bar-wrap">
+          <div class="store-bar" id="storeBar"></div>
+          <!-- 後端相容：原始 select 保留 -->
+          <select id="fieldStore" onchange="onStoreChange()" style="display:none" aria-hidden="true">
+            <option value="南郭店">南郭店</option>
+            <option value="永安店">永安店</option>
+            <option value="彰南店">彰南店</option>
+            <option value="鹿港店">鹿港店</option>
+            <option value="秀水店">秀水店</option>
+            <option value="頂番店">頂番店</option>
+            <option value="和美店">和美店</option>
+            <option value="內新店">內新店</option>
+            <option value="大埔餐車">大埔餐車</option>
+            <option value="花壇餐車">花壇餐車</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field"><label class="field-label">日期</label><input type="date" class="field-input" id="fieldDate"></div>
+        <div class="field"><label class="field-label">天氣</label>
+          <select class="field-select" id="fieldWeather">
+            <option value="晴天">☀️ 晴天</option>
+            <option value="陰天">☁️ 陰天</option>
+            <option value="雨天">🌧️ 雨天</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">紀錄者</label><input type="text" class="field-input" id="fieldRecorder" placeholder="姓名"></div>
+    </div>
+  </div>
+
+  <!-- 產品填寫 -->
+  <div class="card" id="cardProducts">
+    <div class="card-head">
+      <span class="card-emoji">🥟</span><span class="card-title">產品填寫</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <!-- ★ 模式徽章：餐車 / 內新店時顯示 -->
+      <div class="mode-banner" id="modeBanner" style="display:none"></div>
+      <div class="products-table" id="productsTable">
+        <div class="products-header" id="productsHeader">
+          <div class="ph-name">品名</div>
+          <div class="ph-in ph-em">進貨</div>
+          <div class="ph-prev">昨剩</div>
+          <div>買十送一</div>
+          <div>外送</div>
+          <div>報廢</div>
+          <div class="ph-em">今剩</div>
+        </div>
+        <div id="productsBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帶回商品 -->
+  <div class="card closed" id="cardReturn">
+    <div class="card-head" onclick="toggle('cardReturn')">
+      <span class="card-emoji">📦</span><span class="card-title">有商品帶回？</span><span class="card-arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="return-hint">如果今天有商品帶回（調回總部或其他店），在這裡填寫數量。沒有的話不用理會。</div>
+      <div id="returnBody"></div>
+    </div>
+  </div>
+
+  <!-- 支出與雜項 -->
+  <div class="card" id="cardExpense">
+    <div class="card-head">
+      <span class="card-emoji">💰</span><span class="card-title">支出與雜項</span>
+    </div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field"><label class="field-label">打折金額</label><input type="number" class="field-input" id="fieldDiscount" placeholder="0" oninput="calc()"></div>
+        <div class="field"><label class="field-label">現金支出</label><input type="number" class="field-input" id="fieldCashExpense" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="field"><label class="field-label">打折或支出備註</label><input type="text" class="field-input" id="fieldExpenseNote" placeholder="選填"></div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">瓦斯支出</label><input type="number" class="field-input" id="fieldGas" placeholder="0" oninput="calc()"></div>
+        <div class="field"><label class="field-label">廢油收入</label><input type="number" class="field-input" id="fieldOilIncome" placeholder="0" oninput="calc()"></div>
+      </div>
+      <div class="field"><label class="field-label">公司車加油</label><input type="number" class="field-input" id="fieldCarFuel" placeholder="0" oninput="calc()"></div>
+
+      <div class="actual-cash-wrap">
+        <label class="field-label">實際錢盒金額（點鈔後填入）</label>
+        <input type="number" inputmode="numeric" class="field-input" id="fieldActualCash" placeholder="0" oninput="calc()">
+        <div class="actual-cash-hint">填入錢盒內實際點算的現金，系統會自動計算與預估值的差異。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 即時結算 -->
+  <div class="summary">
+    <div class="summary-head"><span class="summary-head-live">LIVE</span></div>
+    <div id="summaryProducts"></div>
+    <div class="s-row big"><span class="s-label">今日錢盒營業額</span><span class="s-value" id="sumRev">$0</span></div>
+    <div class="s-row"><span class="s-label">− 打折金額</span><span class="s-value" id="sumDisc">$0</span></div>
+    <div class="s-row"><span class="s-label">− 現金支出</span><span class="s-value" id="sumCash">$0</span></div>
+    <div class="s-row"><span class="s-label">− 瓦斯支出</span><span class="s-value" id="sumGas">$0</span></div>
+    <div class="s-row"><span class="s-label">+ 廢油收入</span><span class="s-value" id="sumOil">$0</span></div>
+    <div class="s-row"><span class="s-label">− 公司車加油</span><span class="s-value" id="sumFuel">$0</span></div>
+    <div class="s-row total"><span class="s-label">預估應有現金</span><span class="s-value" id="sumExpected">$0</span></div>
+
+    <!-- 對帳 hero -->
+    <div class="diff-hero state-idle" id="diffHero">
+      <div class="diff-hero-top">
+        <div class="diff-hero-label" id="diffHeroLabel">錢盒對帳</div>
+        <div class="diff-hero-actual" id="diffHeroActual">實際：<b>—</b></div>
+      </div>
+      <div class="diff-hero-body">
+        <div class="diff-hero-icon" id="diffHeroIcon">$</div>
+        <div class="diff-hero-main">
+          <div class="diff-hero-result" id="diffHeroText">請先輸入實際錢盒金額</div>
+          <div class="diff-hero-note" id="diffHeroNote">系統會自動判斷短少 / 相符 / 溢收。</div>
+        </div>
+      </div>
+      <!-- hidden 節點：給原 calc() 寫入用（保持 JS 不需改 DOM 查找） -->
+      <span id="sumActual" style="display:none"></span>
+      <span id="sumDiff" style="display:none"></span>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ===== TAB 2：耗材回報 ===== -->
+<div class="page" id="page-consumables">
+<div class="container">
+
+  <div class="card" id="cardConsBasic">
+    <div class="card-head" onclick="toggle('cardConsBasic')">
+      <span class="card-emoji">📋</span><span class="card-title">基本資料</span><span class="card-arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field"><label class="field-label">日期</label><input type="date" class="field-input" id="consDate"></div>
+        <div class="field"><label class="field-label">店名</label>
+          <select class="field-select" id="consStore">
+            <option value="南郭店">南郭店</option>
+            <option value="永安店">永安店</option>
+            <option value="彰南店">彰南店</option>
+            <option value="鹿港店">鹿港店</option>
+            <option value="秀水店">秀水店</option>
+            <option value="頂番店">頂番店</option>
+            <option value="和美店">和美店</option>
+            <option value="內新店">內新店</option>
+            <option value="大埔餐車">大埔餐車</option>
+            <option value="花壇餐車">花壇餐車</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:0.76rem; color:var(--teal); margin-top:4px; padding: 0 2px;">
+        🔗 店名已與打烊結算同步，若需單獨修改請直接選擇。
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="cardConsList">
+    <div class="card-head" onclick="toggle('cardConsList')">
+      <span class="card-emoji">📦</span><span class="card-title">耗材清單</span><span class="card-arrow">▼</span>
+    </div>
+    <div class="card-body">
+      <div id="consListBody"></div>
+      <div class="cons-count-box">
+        <div class="cons-count-label">◆ 回報概覽 ◆</div>
+        <div class="cons-count-num" id="consCount">0 項需回報</div>
+        <div class="cons-count-hint">僅數量 > 0 的品項會寫入試算表</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- 底部 -->
+<div class="bottom-bar">
+  <div class="bottom-inner">
+    <button class="btn-clear" onclick="handleReset()">清除</button>
+    <button class="btn-submit" id="btnSubmit" onclick="handleSubmit()">
+      <span id="btnText">送出結算</span>
+      <div class="spinner" id="btnSpinner"></div>
+    </button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon">✅</div>
+    <div class="modal-title" id="modalTitle">送出成功</div>
+    <div class="modal-msg" id="modalMsg">資料已成功寫入。</div>
+    <button class="modal-btn" onclick="closeModal()">確認</button>
+  </div>
+</div>
+
+<script>
+// ===== 設定值 =====
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyw62uVA1H4M1QMGeDhHd59pqDkiMOZhKqEkmHq0oI-hBVpZKHLVNwMDdLq_1izUWMk/exec';
+var API_KEY = '8a3155a7ba081f0e9a39855a8d7d31a9';  // ★ 必須與後端 程式碼.js 的 API_KEY 完全相同
+var currentTab = 'closing';
+
+var PRODUCTS = [
+  { key: 'pork',     name: '豬肉餡餅' },
+  { key: 'chive',    name: '韭菜盒子' },
+  { key: 'kimchi',   name: '泡菜餡餅' },
+  { key: 'shandong', name: '山東大餅' },
+  { key: 'cream',    name: '奶油餡餅' },
+  { key: 'sesame',   name: '芝麻餡餅' }
+];
+
+var DISPLAY_FIELDS = ['inQty','prevRemain','buyTenFree','delivery','scrap','todayRemain'];
+var DISPLAY_LABELS = ['進貨數量','昨日剩餘','買十送一','外送數量','報廢數量','今日剩餘'];
+var ALL_FIELDS = ['inQty','prevRemain','buyTenFree','delivery','scrap','todayRemain'];
+
+var FOOD_TRUCKS = ['大埔餐車','花壇餐車'];
+
+var PRICES = {
+  default:  { pork:30, chive:30, kimchi:35, shandong:35, cream:15, sesame:15 },
+  '內新店': { pork:35, chive:0,  kimchi:35, shandong:40, cream:20, sesame:20 }
+};
+
+var CONSUMABLES = [
+  '耐炸油(桶)','豬肉紙袋(束)','韭菜紙袋(束)','泡菜紙袋(束)',
+  '大餅紙袋(束)','奶油紙袋(束)','芝麻紙袋(束)','四兩塑膠袋(包)',
+  '半斤塑膠袋(包)','一斤塑膠袋(包)','三斤塑膠袋(包)','竹籤(袋)',
+  '胡椒鹽(盒)','辣椒包(袋)','沙拉脫(罐)','漂白水(罐)',
+  '衛生紙(袋)','廚房紙巾(袋)'
+];
+
+// ★ 改動：耗材分類（UI 用；不動 CONSUMABLES 順序/index，後端仍收 cons_qty_0~17）
+var CONS_GROUPS = [
+  { label: '油品',        icon: '🛢️', range: [0, 0]   },   // 耐炸油
+  { label: '品項紙袋',    icon: '📜', range: [1, 6]   },   // 豬/韭/泡/大/奶/芝 紙袋
+  { label: '塑膠袋',      icon: '🛍️', range: [7, 10]  },   // 四兩~三斤
+  { label: '調味與雜項',  icon: '🧂', range: [11, 13] },   // 竹籤/胡椒鹽/辣椒包
+  { label: '清潔用品',    icon: '🧴', range: [14, 17] }    // 沙拉脫/漂白水/衛生紙/廚房紙巾
+];
+
+// ★ 分店分組（UI 用，不影響後端）
+var STORE_GROUPS = [
+  { label: '店面', icon: '🏪', stores: ['南郭店','永安店','彰南店','鹿港店','秀水店','頂番店','和美店','內新店'] },
+  { label: '餐車', icon: '🚚', stores: ['大埔餐車','花壇餐車'] }
+];
+
+// ===== 工具函式 =====
+function gv(id) {
+  var el = document.getElementById(id);
+  return el ? (parseInt(el.value,10)||0) : 0;
+}
+function isFoodTruck(store) { return FOOD_TRUCKS.indexOf(store) !== -1; }
+function getStore() { return document.getElementById('fieldStore').value; }
+
+// ===== 初始化 =====
+function init() {
+  var t = new Date();
+  var ds = t.toISOString().slice(0,10);
+  var dn = ['日','一','二','三','四','五','六'];
+  document.getElementById('fieldDate').value = ds;
+  document.getElementById('consDate').value = ds;
+  document.getElementById('headerDate').innerHTML =
+    t.getFullYear()+'/'+String(t.getMonth()+1).padStart(2,'0')+'/'+
+    String(t.getDate()).padStart(2,'0')+
+    '<br><span class="wd">星期'+dn[t.getDay()]+'</span>';
+
+  // 套用最近使用的店
+  var recent = getRecentStore();
+  if (recent) document.getElementById('fieldStore').value = recent;
+
+  renderStoreBar();
+  renderProducts();
+  renderReturnItems();
+  renderConsumables();
+  calc();
+  updateConsCount();
+}
+
+// ===== Tab =====
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab===tab);
+  });
+  document.querySelectorAll('.page').forEach(function(p){
+    p.classList.toggle('active', p.id==='page-'+tab);
+  });
+  document.getElementById('btnText').textContent = tab==='closing' ? '送出結算' : '送出耗材回報';
+}
+
+function toggle(id) { document.getElementById(id).classList.toggle('closed'); }
+
+// ===== 分店 chip bar =====
+function getRecentStore() {
+  try { return localStorage.getItem('jbp_recent_store') || ''; } catch(e) { return ''; }
+}
+function setRecentStore(store) {
+  try { localStorage.setItem('jbp_recent_store', store); } catch(e) {}
+}
+function storeIcon(store) { return isFoodTruck(store) ? '🚚' : '🏪'; }
+
+function renderStoreBar() {
+  var bar = document.getElementById('storeBar');
+  bar.innerHTML = '';
+  var current = getStore();
+  var recent  = getRecentStore();
+
+  function chipHTML(s, isRecent) {
+    var truck = isFoodTruck(s);
+    var cls = 'store-chip' + (truck ? ' truck' : '') + (s === current ? ' selected' : '') + (isRecent ? ' recent' : '');
+    return '<div class="'+cls+'" data-store="'+s+'" onclick="pickStore(\''+s+'\')">' +
+             '<div class="chip-icon">'+storeIcon(s)+'</div>' +
+             '<div class="chip-name">'+s+'</div>' +
+           '</div>';
+  }
+
+  var html = '';
+  if (recent) html += chipHTML(recent, true);
+  STORE_GROUPS.forEach(function(g){
+    g.stores.forEach(function(s){
+      if (s === recent) return;
+      html += chipHTML(s, false);
+    });
+  });
+  bar.innerHTML = html;
+}
+
+function pickStore(store) {
+  document.getElementById('fieldStore').value = store;
+  setRecentStore(store);
+  renderStoreBar();
+  onStoreChange();
+  // 滑動到已選中的 chip
+  requestAnimationFrame(function(){
+    var sel = document.querySelector('.store-chip.selected');
+    if (sel) sel.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  });
+}
+
+// ============================================================
+// ★ 產品渲染 — 紙本橫排 + 連續 tabindex（手機 Enter 可順序往下填）
+// ============================================================
+function renderProducts() {
+  var store = getStore();
+  var isNX = store === '內新店';
+  var isTruck = isFoodTruck(store);
+  var pr = isNX ? PRICES['內新店'] : PRICES.default;
+  var body = document.getElementById('productsBody');
+  var table = document.getElementById('productsTable');
+  body.innerHTML = '';
+  table.classList.toggle('truck-mode', isTruck);
+
+  // ★ 模式徽章
+  var banner = document.getElementById('modeBanner');
+  banner.className = 'mode-banner';
+  if (isTruck) {
+    banner.classList.add('truck');
+    banner.style.display = 'flex';
+    banner.innerHTML = '<span class="mb-icon">🚚</span>' +
+      '<span class="mb-tag"><span>餐車模式</span></span>' +
+      '<span>「昨日剩餘」欄位已隱藏（隔日無庫存）</span>';
+  } else if (isNX) {
+    banner.classList.add('nx');
+    banner.style.display = 'flex';
+    banner.innerHTML = '<span class="mb-icon">🏬</span>' +
+      '<span class="mb-tag"><span>內新店</span></span>' +
+      '<span>韭菜盒子不販售 · 其他品項採獨立定價</span>';
+  } else {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+  }
+
+  // 餐車模式時調整表頭文字（昨剩欄由 CSS 隱藏）
+  // 欄位 index 對應 DISPLAY_FIELDS: 0=inQty 1=prevRemain 2=buyTenFree 3=delivery 4=scrap 5=todayRemain
+  var cellClassMap = ['cell-in','cell-prev','cell-b10','cell-del','cell-scr','cell-today'];
+
+  // 連續 tabindex：從 100 開始，每個欄位 +1，讓手機 Enter 順著填
+  var tabBase = 100;
+  var stepCounter = 0;
+
+  PRODUCTS.forEach(function(p, pi) {
+    var hide = isNX && p.key === 'chive';
+    var price = pr[p.key];
+    var row = document.createElement('div');
+    row.className = 'product-row' + (hide ? ' disabled' : '');
+    row.id = 'card_' + p.key;
+
+    // 品名欄
+    var nameCell =
+      '<div class="product-name-cell">' +
+        '<div class="product-name">'+p.name+(hide?'<br><span style="font-size:0.65rem;color:var(--ink-faint)">不適用</span>':'')+'</div>' +
+        '<div class="product-price">$'+price+' /個</div>' +
+        '<div class="product-sold" id="sold_'+p.key+'"></div>' +
+      '</div>';
+
+    // 6 個輸入格（DISPLAY_FIELDS 順序）
+    var cellsHTML = '';
+    DISPLAY_FIELDS.forEach(function(f, i) {
+      stepCounter++;
+      var cellCls = 'cell ' + cellClassMap[i];
+      var skipTab = (isTruck && f === 'prevRemain'); // 餐車跳過這格 tab
+      var ti = skipTab ? -1 : (tabBase + (pi * 6) + i);
+      cellsHTML += '<div class="'+cellCls+'" data-step="'+(i+1)+'">' +
+        '<input type="number" inputmode="numeric" enterkeyhint="next" ' +
+        'id="'+p.key+'_'+f+'" placeholder="0" oninput="calc()" ' +
+        'tabindex="'+ti+'"'+(hide?' disabled':'')+'></div>';
+    });
+
+    row.innerHTML = nameCell + cellsHTML;
+    body.appendChild(row);
+  });
+
+  // ★ 設定連續 Enter 跳下一格邏輯
+  wireEnterFlow();
+}
+
+// ★ 改動：手機鍵盤按 Enter 自動跳下一格
+function wireEnterFlow() {
+  var inputs = Array.prototype.slice.call(
+    document.querySelectorAll('#productsBody input[type=number]')
+  ).filter(function(el){ return el.tabIndex >= 0 && !el.disabled; })
+   .sort(function(a,b){ return a.tabIndex - b.tabIndex; });
+
+  inputs.forEach(function(el, idx){
+    el.onkeydown = function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var next = inputs[idx+1];
+        if (next) { next.focus(); next.select && next.select(); }
+        else { el.blur(); }
+      }
+    };
+  });
+}
+
+// ===== 帶回商品 =====
+function renderReturnItems() {
+  var store = getStore();
+  var isNX = store === '內新店';
+  var body = document.getElementById('returnBody');
+  body.innerHTML = '';
+  PRODUCTS.forEach(function(p) {
+    if (isNX && p.key === 'chive') return;
+    var div = document.createElement('div');
+    div.className = 'return-item';
+    div.innerHTML =
+      '<span class="return-item-name">'+p.name+'</span>'+
+      '<input type="number" inputmode="numeric" class="return-item-input" id="return_'+p.key+'" placeholder="0" oninput="calc()">';
+    body.appendChild(div);
+  });
+}
+
+// ===== 店名變更 =====
+function onStoreChange() {
+  var store = getStore();
+  document.getElementById('consStore').value = store;
+  setRecentStore(store);
+  renderStoreBar();
+  renderProducts();
+  renderReturnItems();
+  calc();
+}
+
+// ===== 耗材 =====
+function renderConsumables() {
+  var body = document.getElementById('consListBody');
+  body.innerHTML = '';
+  // ★ 依 CONS_GROUPS 分組渲染（index 仍用 CONSUMABLES 原順序，後端 cons_qty_N 不變）
+  CONS_GROUPS.forEach(function(g) {
+    var header = document.createElement('div');
+    header.className = 'cons-group-head';
+    header.innerHTML =
+      '<span class="cons-group-icon">'+g.icon+'</span>' +
+      '<span class="cons-group-label">'+g.label+'</span>' +
+      '<span class="cons-group-line"></span>';
+    body.appendChild(header);
+
+    for (var i = g.range[0]; i <= g.range[1]; i++) {
+      var name = CONSUMABLES[i];
+      var div = document.createElement('div');
+      div.className = 'cons-item';
+      div.id = 'cons_item_'+i;
+      div.innerHTML =
+        '<span class="cons-num-tag">'+String(i+1).padStart(2,'0')+'</span>'+
+        '<span class="cons-name">'+name+'</span>'+
+        '<input type="number" inputmode="numeric" class="cons-qty-input" id="cons_qty_'+i+'" placeholder="0" oninput="updateConsCount()">'+
+        '<input type="text" class="cons-note-input" id="cons_note_'+i+'" placeholder="備註">';
+      body.appendChild(div);
+    }
+  });
+}
+function updateConsCount() {
+  var c = 0;
+  CONSUMABLES.forEach(function(_,i){
+    var v = gv('cons_qty_'+i);
+    var item = document.getElementById('cons_item_'+i);
+    if (item) item.classList.toggle('has-qty', v > 0);
+    if (v > 0) c++;
+  });
+  document.getElementById('consCount').textContent = c + ' 項需回報';
+}
+
+// ===== 即時計算（★ 公式不動）=====
+function calc() {
+  var store = getStore();
+  var isNX = store === '內新店';
+  var isTruck = isFoodTruck(store);
+  var pr = isNX ? PRICES['內新店'] : PRICES.default;
+  var totalRev = 0, html = '';
+
+  PRODUCTS.forEach(function(p) {
+    if (isNX && p.key === 'chive') return;
+    var price = pr[p.key];
+    var prev = isTruck ? 0 : gv(p.key+'_prevRemain');
+    var inQ = gv(p.key+'_inQty');
+    var rem = gv(p.key+'_todayRemain');
+    var scr = gv(p.key+'_scrap');
+    var b10 = gv(p.key+'_buyTenFree');
+    var del = gv(p.key+'_delivery');
+    var ret = gv('return_'+p.key);
+    var sold = (prev + inQ) - (rem + scr + b10 + del + ret);
+    var rev = sold * price;
+    totalRev += rev;
+    var se = document.getElementById('sold_'+p.key);
+    if(se) se.textContent = sold>0 ? '售 '+sold : '';
+    var card = document.getElementById('card_'+p.key);
+    if (card) card.classList.toggle('has-sold', sold > 0);
+    html += '<div class="s-row"><span class="s-label">'+p.name+' × '+sold+
+      '</span><span class="s-value">$'+rev.toLocaleString()+'</span></div>';
+  });
+
+  document.getElementById('summaryProducts').innerHTML = html;
+  document.getElementById('sumRev').textContent = '$'+totalRev.toLocaleString();
+  var disc=gv('fieldDiscount'), cash=gv('fieldCashExpense');
+  var gas=gv('fieldGas'), oil=gv('fieldOilIncome'), fuel=gv('fieldCarFuel');
+  document.getElementById('sumDisc').textContent = '$'+disc.toLocaleString();
+  document.getElementById('sumCash').textContent = '$'+cash.toLocaleString();
+  document.getElementById('sumGas').textContent = '$'+gas.toLocaleString();
+  document.getElementById('sumOil').textContent = '$'+oil.toLocaleString();
+  document.getElementById('sumFuel').textContent = '$'+fuel.toLocaleString();
+
+  var expected = totalRev - disc - cash - gas + oil - fuel;
+  var elExp = document.getElementById('sumExpected');
+  elExp.textContent = '$'+expected.toLocaleString();
+  elExp.className = 's-value '+(expected>=0?'val-pos':'val-neg');
+
+  var actualEl = document.getElementById('fieldActualCash');
+  var actualRaw = actualEl ? actualEl.value : '';
+  var sumActualEl = document.getElementById('sumActual');
+  var sumDiffEl = document.getElementById('sumDiff');
+
+  if (actualRaw === '' || actualRaw === null) {
+    sumActualEl.textContent = '—';
+    sumDiffEl.textContent = '—';
+    updateDiffHero('idle', null, expected);
+  } else {
+    var actual = parseInt(actualRaw, 10) || 0;
+    var diff = actual - expected;
+    sumActualEl.textContent = '$' + actual.toLocaleString();
+    if (diff === 0) {
+      sumDiffEl.textContent = '相符';
+      updateDiffHero('match', { actual: actual, diff: 0 }, expected);
+    } else if (diff > 0) {
+      sumDiffEl.textContent = '多 $' + diff.toLocaleString();
+      updateDiffHero('over', { actual: actual, diff: diff }, expected);
+    } else {
+      sumDiffEl.textContent = '短少 $' + Math.abs(diff).toLocaleString();
+      updateDiffHero('short', { actual: actual, diff: diff }, expected);
+    }
+  }
+  return { totalRevenue: totalRev, expected: expected };
+}
+
+function updateDiffHero(state, payload, expected) {
+  var hero    = document.getElementById('diffHero');
+  var label   = document.getElementById('diffHeroLabel');
+  var actual  = document.getElementById('diffHeroActual');
+  var icon    = document.getElementById('diffHeroIcon');
+  var text    = document.getElementById('diffHeroText');
+  var note    = document.getElementById('diffHeroNote');
+
+  hero.classList.remove('state-idle','state-match','state-short','state-over');
+  hero.classList.add('state-'+state);
+
+  if (state === 'idle') {
+    label.textContent = '錢盒對帳';
+    actual.innerHTML  = '實際：<b>—</b>';
+    icon.textContent  = '$';
+    text.textContent  = '請先輸入實際錢盒金額';
+    note.textContent  = '系統會自動判斷短少 / 相符 / 溢收。';
+    return;
+  }
+  actual.innerHTML = '實際 <b>$'+payload.actual.toLocaleString()+'</b>　／　預估 <b>$'+expected.toLocaleString()+'</b>';
+
+  if (state === 'match') {
+    label.textContent = '相符';
+    icon.textContent  = '✓';
+    text.textContent  = '$' + payload.actual.toLocaleString();
+    note.textContent  = '帳目完全一致，可以放心送出。';
+  } else if (state === 'short') {
+    var amt = Math.abs(payload.diff).toLocaleString();
+    label.textContent = '短少';
+    icon.textContent  = '!';
+    text.textContent  = '−$' + amt;
+    note.textContent  = '錢盒比預估少 $'+amt+'，請先再點一次鈔票並確認售出數量。';
+  } else if (state === 'over') {
+    var over = payload.diff.toLocaleString();
+    label.textContent = '溢收';
+    icon.textContent  = '+';
+    text.textContent  = '+$' + over;
+    note.textContent  = '錢盒比預估多 $'+over+'，可能是找零或登記漏掉，建議再核對。';
+  }
+}
+
+// ===== 資料收集（★ 完全不動）=====
+function collectClosingData() {
+  var store = getStore();
+  var isNX = store === '內新店';
+  var isTruck = isFoodTruck(store);
+  var res = calc();
+  var actualCashEl = document.getElementById('fieldActualCash');
+  var actualCashVal = actualCashEl && actualCashEl.value !== '' ? (parseInt(actualCashEl.value,10)||0) : null;
+
+  var data = {
+    action: 'closing',
+    date: document.getElementById('fieldDate').value,
+    store: store,
+    weather: document.getElementById('fieldWeather').value,
+    recorder: document.getElementById('fieldRecorder').value.trim()
+  };
+
+  PRODUCTS.forEach(function(p) {
+    var zero = isNX && p.key === 'chive';
+    ALL_FIELDS.forEach(function(f) {
+      if (zero) data[p.key+'_'+f] = 0;
+      else if (isTruck && f === 'prevRemain') data[p.key+'_'+f] = 0;
+      else data[p.key+'_'+f] = gv(p.key+'_'+f);
+    });
+  });
+
+  var returnData = {};
+  PRODUCTS.forEach(function(p) {
+    var val = gv('return_'+p.key);
+    if (val > 0) returnData[p.key] = val;
+  });
+  data.returnItems = returnData;
+  data.discount     = gv('fieldDiscount');
+  data.cashExpense  = gv('fieldCashExpense');
+  data.expenseNote  = document.getElementById('fieldExpenseNote').value.trim();
+  data.totalRevenue = res.totalRevenue;
+  data.gas          = gv('fieldGas');
+  data.oilIncome    = gv('fieldOilIncome');
+  data.carFuel      = gv('fieldCarFuel');
+  data.actualCash   = actualCashVal;
+  return data;
+}
+
+function collectConsumablesData() {
+  var items = [];
+  CONSUMABLES.forEach(function(name,i){
+    items.push({
+      name: name,
+      qty: gv('cons_qty_'+i),
+      note: (document.getElementById('cons_note_'+i).value||'').trim()
+    });
+  });
+  return {
+    action: 'consumables',
+    date: document.getElementById('consDate').value,
+    store: document.getElementById('consStore').value,
+    items: items
+  };
+}
+
+// ===== 送出（★ API 格式不動）=====
+async function handleSubmit() {
+  var data;
+  if (currentTab === 'closing') {
+    data = collectClosingData();
+    if (!data.recorder) { showModal('⚠️','請填寫紀錄者','紀錄者姓名為必填欄位。'); return; }
+  } else {
+    data = collectConsumablesData();
+    if (!data.items.some(function(it){ return it.qty>0; })) {
+      showModal('⚠️','尚無耗材需回報','請至少填一項數量 > 0 的耗材。'); return;
+    }
+  }
+  var btn=document.getElementById('btnSubmit'), txt=document.getElementById('btnText'), spn=document.getElementById('btnSpinner');
+  btn.disabled=true; txt.style.display='none'; spn.style.display='block';
+  try {
+    // ★ PWA 版多帶 key 給後端驗證；data 內容完全不動
+    var payload = Object.assign({ key: API_KEY }, data);
+    var resp = await fetch(GAS_URL, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    var result = await resp.json();
+    if (result.status === 'success') {
+      var label = currentTab==='closing' ? '打烊結算' : '耗材回報';
+      showModal('✅','送出成功','「'+data.store+'」的'+label+'資料已成功寫入。');
+    } else {
+      showModal('❌','送出失敗', result.message||'伺服器發生錯誤。');
+    }
+  } catch(err) {
+    showModal('❌','網路錯誤','無法連線至伺服器，請檢查網路。');
+  } finally {
+    btn.disabled=false; txt.style.display=''; spn.style.display='none';
+  }
+}
+
+// ===== 清除 =====
+function handleReset() {
+  var label = currentTab==='closing' ? '打烊結算' : '耗材回報';
+  if (!confirm('確定要清除「'+label+'」所有內容嗎？')) return;
+  if (currentTab === 'closing') {
+    document.querySelectorAll('#page-closing input[type=number]').forEach(function(el){ el.value=''; });
+    PRODUCTS.forEach(function(p){ var el=document.getElementById('return_'+p.key); if(el) el.value=''; });
+    document.getElementById('fieldRecorder').value='';
+    document.getElementById('fieldExpenseNote').value='';
+    calc();
+  } else {
+    CONSUMABLES.forEach(function(_,i){
+      document.getElementById('cons_qty_'+i).value='';
+      document.getElementById('cons_note_'+i).value='';
+    });
+    updateConsCount();
+  }
+}
+
+// ===== Modal =====
+function showModal(icon, title, msg) {
+  document.getElementById('modalIcon').textContent = icon;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent = msg;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+document.addEventListener('DOMContentLoaded', init);
+
+// ===== Service Worker 註冊（PWA 離線快取）=====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(function(err) { console.warn('SW 註冊失敗：', err); });
+  });
+}
+</script>
+</body>
+</html>
