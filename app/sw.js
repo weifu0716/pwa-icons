@@ -1,6 +1,6 @@
 // 珍北平現金簿 Service Worker
 // 改版時只要改 CACHE_VERSION，啟用時就會清掉舊快取
-const CACHE_VERSION = 'v1-2026-04-20';
+const CACHE_VERSION = 'v2-2026-04-25';
 const CACHE_NAME = 'cashbook-' + CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json'];
 

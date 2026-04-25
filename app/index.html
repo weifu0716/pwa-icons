@@ -53,6 +53,106 @@ body {
 }
 .header h1 { font-size: 17px; font-weight: 700; letter-spacing: 2px; }
 .header .bal { font-size: 12px; opacity: .85; margin-top: 3px; }
+.header .gear {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,.15);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.header .gear svg { width: 20px; height: 20px; fill: currentColor; }
+.header .gear:active { background: rgba(255,255,255,.3); }
+
+/* ── 設定分頁 ── */
+.opt-sec-title {
+  font-size: 13px; font-weight: 700; color: var(--sub);
+  margin: 4px 0 10px; letter-spacing: 1px;
+}
+.opt-list { margin-bottom: 12px; }
+.opt-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+.opt-row .opt-name { flex: 1; word-break: break-all; }
+.opt-row select.opt-role {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: #fff;
+  -webkit-appearance: none;
+  max-width: 120px;
+}
+.opt-row .opt-del {
+  width: 32px; height: 32px;
+  border: none;
+  background: #fff;
+  color: var(--red);
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.opt-row .opt-del:active { background: var(--red); color: #fff; }
+.opt-add {
+  display: flex; gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.opt-add input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+}
+.opt-add select {
+  padding: 10px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  background: #fff;
+  -webkit-appearance: none;
+  max-width: 120px;
+}
+.opt-add button {
+  padding: 10px 14px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.opt-save-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 6px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.opt-save-btn:disabled { opacity: .55; }
+.opt-hint { font-size: 12px; color: var(--sub); margin: 2px 0 10px; }
 
 /* ── Balance Card ── */
 .bal-card {
@@ -575,6 +675,9 @@ body {
 <div class="header">
   <h1>珍北平現金簿</h1>
   <div class="bal" id="hbal">餘額載入中…</div>
+  <button class="gear" id="gear-btn" onclick="goTab('settings')" aria-label="選項設定">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.484.484 0 0 0 13.9 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.71 8.46c-.12.22-.07.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94 0 .32.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+  </button>
 </div>
 
 <!-- ════ TAB：記帳 ════ -->
@@ -629,29 +732,15 @@ body {
 
     <div class="fld">
       <label>備註2（會計用）</label>
-      <select id="note2">
-        <option value="">— 選擇 —</option>
-        <option>公司用(已提供憑證)</option>
-        <option>公司用(未提供憑證)</option>
-        <option>家用</option>
-        <option>營業額收入</option>
-        <option>消失的誤差值</option>
-        <option>爸媽借款</option>
+      <select id="note2" disabled>
+        <option value="">— 載入中… —</option>
       </select>
     </div>
 
     <div class="fld">
       <label>備註3（月報分類）</label>
-      <select id="note3">
-        <option value="">— 選擇 —</option>
-        <option>珍北平收入</option>
-        <option>珍北平固定支出</option>
-        <option>珍北平流動支出</option>
-        <option>家庭用支出</option>
-        <option>父母用支出</option>
-        <option>家庭收入</option>
-        <option>消失的錢</option>
-        <option>父母借支公司</option>
+      <select id="note3" disabled>
+        <option value="">— 載入中… —</option>
       </select>
     </div>
 
@@ -796,6 +885,42 @@ body {
   <div style="height:16px"></div>
 </div>
 
+<!-- ════ TAB：選項設定（從齒輪進入）════ -->
+<div class="tab" id="tab-settings">
+  <div class="card">
+    <div class="sec-title" style="margin-bottom:4px">選項設定</div>
+    <div class="opt-hint">管理「備注二」「備注三」下拉選單。改完要按最下方「儲存變更」才會寫回試算表。</div>
+
+    <div class="opt-sec-title">備注二（會計用）</div>
+    <div class="opt-list" id="opt2-list"></div>
+    <div class="opt-add">
+      <input id="opt2-input" type="text" placeholder="新選項名稱" maxlength="30">
+      <button onclick="addOpt2()">新增</button>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:18px 0"></div>
+
+    <div class="opt-sec-title">備注三（月報分類）</div>
+    <div class="opt-hint">「儀表板角色」決定這個類別在儀表板圓餅圖的位置。不設 = 不被儀表板統計。</div>
+    <div class="opt-list" id="opt3-list"></div>
+    <div class="opt-add">
+      <input id="opt3-input" type="text" placeholder="新選項名稱" maxlength="30">
+      <select id="opt3-role-input">
+        <option value="">（不設角色）</option>
+        <option value="主營收">主營收</option>
+        <option value="珍北平固定支出">固定支出</option>
+        <option value="錢流出(分布圖)">流動支出(分布圖)</option>
+        <option value="其他收入">其他收入</option>
+      </select>
+      <button onclick="addOpt3()">新增</button>
+    </div>
+
+    <div style="height:18px"></div>
+    <button class="opt-save-btn" id="opt-save-btn" onclick="saveSettings()">儲存變更</button>
+  </div>
+  <div style="height:16px"></div>
+</div>
+
 <!-- ════ Bottom Nav ════ -->
 <nav class="bnav">
   <button class="nbtn on" id="nav-input" onclick="goTab('input')">
@@ -856,12 +981,36 @@ const CAT_COLOR = {
   '家庭收入':       '#00838f',
   '消失的錢':       '#546e7a',
   '父母借支公司':   '#6d4c41',
+  '貸款':           '#ad1457',
+  '拌餡支出':       '#00695c',
+  '韋甫支出':       '#4527a0',
   '未分類':         '#9e9e9e'
 };
-// 圓餅圖只顯示「淨利支出分配」的類別
-const DIST_CATS   = ['珍北平流動支出','家庭用支出','父母用支出','消失的錢','父母借支公司'];
+const EXTRA_COLORS = ['#ad1457','#00695c','#4527a0','#bf360c','#263238','#33691e','#01579b','#4e342e'];
+function colorFor(cat) {
+  if (CAT_COLOR[cat]) return CAT_COLOR[cat];
+  let h = 0; for (let i = 0; i < cat.length; i++) h = (h * 31 + cat.charCodeAt(i)) >>> 0;
+  return EXTRA_COLORS[h % EXTRA_COLORS.length];
+}
 const REMAIN_COL  = '#2e7d32';
 const REMAIN_NEG_COL = '#c62828';
+
+// 選項 fallback
+const FALLBACK_OPT2 = ['公司用(已提供憑證)','公司用(未提供憑證)','家用','營業額收入','消失的誤差值','爸媽借款'];
+const FALLBACK_OPT3 = [
+  {name:'珍北平收入',role:'主營收'},
+  {name:'珍北平固定支出',role:'珍北平固定支出'},
+  {name:'珍北平流動支出',role:'錢流出(分布圖)'},
+  {name:'家庭用支出',role:'錢流出(分布圖)'},
+  {name:'父母用支出',role:'錢流出(分布圖)'},
+  {name:'家庭收入',role:'其他收入'},
+  {name:'消失的錢',role:'錢流出(分布圖)'},
+  {name:'父母借支公司',role:'錢流出(分布圖)'},
+  {name:'貸款',role:'錢流出(分布圖)'},
+  {name:'拌餡支出',role:'錢流出(分布圖)'},
+  {name:'韋甫支出',role:'錢流出(分布圖)'}
+];
+let OPTS = { remark2: [], remark3: [] };
 
 // ── Init ───────────────────────────────────
 (function() {
@@ -871,7 +1020,40 @@ const REMAIN_NEG_COL = '#c62828';
   lM = rM = dM = now.getMonth() + 1;
   updMlbls();
   loadBal();
+  loadOptions();
 })();
+
+// ── Options（備注二 / 備注三）────────────────
+function _applyOptsToSelects() {
+  const sel2 = document.getElementById('note2');
+  const sel3 = document.getElementById('note3');
+  sel2.innerHTML = '<option value="">— 選擇 —</option>' +
+    OPTS.remark2.map(n => `<option>${esc(n)}</option>`).join('');
+  sel3.innerHTML = '<option value="">— 選擇 —</option>' +
+    OPTS.remark3.map(x => `<option>${esc(x.name)}</option>`).join('');
+  sel2.disabled = false;
+  sel3.disabled = false;
+}
+
+function loadOptions() {
+  api('getOptions')
+    .then(r => {
+      if (r && r.remark2 && r.remark3) {
+        OPTS.remark2 = r.remark2.slice();
+        const roleMap = r.roleMap || {};
+        OPTS.remark3 = r.remark3.map(n => ({ name: n, role: roleMap[n] || '' }));
+      } else {
+        OPTS.remark2 = FALLBACK_OPT2.slice();
+        OPTS.remark3 = FALLBACK_OPT3.map(x => ({ ...x }));
+      }
+      _applyOptsToSelects();
+    })
+    .catch(() => {
+      OPTS.remark2 = FALLBACK_OPT2.slice();
+      OPTS.remark3 = FALLBACK_OPT3.map(x => ({ ...x }));
+      _applyOptsToSelects();
+    });
+}
 
 function fmt(n) {
   return Number(n).toLocaleString('zh-TW');
@@ -974,14 +1156,101 @@ function submit() {
 
 // ── Tab Switch ─────────────────────────────
 function goTab(t) {
-  ['input','list','report','dash','count'].forEach(id => {
-    document.getElementById('tab-' + id).classList.toggle('on', id === t);
-    document.getElementById('nav-' + id).classList.toggle('on', id === t);
+  ['input','list','report','dash','count','settings'].forEach(id => {
+    const tab = document.getElementById('tab-' + id);
+    if (tab) tab.classList.toggle('on', id === t);
+    const nav = document.getElementById('nav-' + id);
+    if (nav) nav.classList.toggle('on', id === t);
   });
-  if (t === 'list')   loadTxns();
-  if (t === 'report') loadReport();
-  if (t === 'dash')   loadDashboard();
-  if (t === 'count')  initCount();
+  if (t === 'list')     loadTxns();
+  if (t === 'report')   loadReport();
+  if (t === 'dash')     loadDashboard();
+  if (t === 'count')    initCount();
+  if (t === 'settings') renderSettings();
+}
+
+// ── Settings：渲染 / 新增 / 刪除 / 儲存 ───────
+function renderSettings() {
+  const l2 = document.getElementById('opt2-list');
+  const l3 = document.getElementById('opt3-list');
+  l2.innerHTML = OPTS.remark2.map((n, i) =>
+    `<div class="opt-row">
+       <div class="opt-name">${esc(n)}</div>
+       <button class="opt-del" onclick="delOpt2(${i})" aria-label="刪除">×</button>
+     </div>`).join('') || '<div class="opt-hint">（尚無選項）</div>';
+
+  const roleOpts = (sel) => `
+    <option value=""${sel===''?' selected':''}>（不設）</option>
+    <option value="主營收"${sel==='主營收'?' selected':''}>主營收</option>
+    <option value="珍北平固定支出"${sel==='珍北平固定支出'?' selected':''}>固定支出</option>
+    <option value="錢流出(分布圖)"${sel==='錢流出(分布圖)'?' selected':''}>流動支出</option>
+    <option value="其他收入"${sel==='其他收入'?' selected':''}>其他收入</option>`;
+  l3.innerHTML = OPTS.remark3.map((x, i) =>
+    `<div class="opt-row">
+       <div class="opt-name">${esc(x.name)}</div>
+       <select class="opt-role" onchange="chgOpt3Role(${i}, this.value)">${roleOpts(x.role || '')}</select>
+       <button class="opt-del" onclick="delOpt3(${i})" aria-label="刪除">×</button>
+     </div>`).join('') || '<div class="opt-hint">（尚無選項）</div>';
+}
+
+function addOpt2() {
+  const el = document.getElementById('opt2-input');
+  const v = (el.value || '').trim();
+  if (!v) { toast('請輸入選項名稱'); return; }
+  if (OPTS.remark2.indexOf(v) >= 0) { toast('「' + v + '」已存在'); return; }
+  OPTS.remark2.push(v);
+  el.value = '';
+  renderSettings();
+}
+
+function addOpt3() {
+  const el = document.getElementById('opt3-input');
+  const roleEl = document.getElementById('opt3-role-input');
+  const v = (el.value || '').trim();
+  const r = roleEl.value;
+  if (!v) { toast('請輸入選項名稱'); return; }
+  if (OPTS.remark3.some(x => x.name === v)) { toast('「' + v + '」已存在'); return; }
+  OPTS.remark3.push({ name: v, role: r });
+  el.value = '';
+  roleEl.value = '';
+  renderSettings();
+}
+
+function delOpt2(i) {
+  const n = OPTS.remark2[i];
+  if (!confirm('確定刪除備注二「' + n + '」？\n（不影響既有的現金流紀錄）')) return;
+  OPTS.remark2.splice(i, 1);
+  renderSettings();
+}
+
+function delOpt3(i) {
+  const n = OPTS.remark3[i].name;
+  if (!confirm('確定刪除備注三「' + n + '」？\n（不影響既有的現金流紀錄）')) return;
+  OPTS.remark3.splice(i, 1);
+  renderSettings();
+}
+
+function chgOpt3Role(i, role) {
+  OPTS.remark3[i].role = role;
+}
+
+function saveSettings() {
+  if (!confirm('確定儲存？\n將覆寫「選項設定」工作表的資料。')) return;
+  const btn = document.getElementById('opt-save-btn');
+  btn.disabled = true;
+  btn.textContent = '儲存中…';
+  api('saveOptions', { remark2: OPTS.remark2, remark3: OPTS.remark3 })
+    .then(r => {
+      btn.disabled = false;
+      btn.textContent = '儲存變更';
+      toast('✓ 已儲存');
+      loadOptions();
+    })
+    .catch(err => {
+      btn.disabled = false;
+      btn.textContent = '儲存變更';
+      toast('❌ ' + (err.message || '儲存失敗'));
+    });
 }
 
 // ── Cash Count ─────────────────────────────
@@ -1152,7 +1421,7 @@ function loadTxns() {
           const cls  = isI ? 'i' : 'e';
           const sign = isI ? '+' : '−';
           const tags = [t.note3, t.note2].filter(Boolean).join(' · ');
-          const catCol = CAT_COLOR[t.note3] || '#9e9e9e';
+          const catCol = t.note3 ? colorFor(t.note3) : '#9e9e9e';
           const bgTint = t.note3 ? hexA(catCol, 0.10) : 'transparent';
           const bordCol = t.note3 ? hexA(catCol, 0.35) : 'transparent';
           html += `
@@ -1224,7 +1493,7 @@ function loadReport() {
       const ti = d.totalIncome  || 1;
       Object.entries(d.byCat).forEach(([cat, v]) => {
         if (!v.income && !v.expense) return;
-        const col = CAT_COLOR[cat] || '#9e9e9e';
+        const col = colorFor(cat);
         const pctE = Math.round((v.expense / te) * 100);
         const pctI = Math.round((v.income  / ti) * 100);
         html += `
@@ -1307,10 +1576,11 @@ function loadDashboard() {
           </div>
         </div>`;
       } else {
-        // Build segments
+        // Build segments（改用後端回傳的 dist 物件 keys，自動支援新類別）
         const segs = [];
-        DIST_CATS.forEach(c => {
-          if (d.dist[c] > 0) segs.push({ label: c, value: d.dist[c], color: CAT_COLOR[c] });
+        const distKeys = Object.keys(d.dist || {});
+        distKeys.forEach(c => {
+          if (d.dist[c] > 0) segs.push({ label: c, value: d.dist[c], color: colorFor(c) });
         });
         const remainCol = d.remaining >= 0 ? REMAIN_COL : REMAIN_NEG_COL;
         segs.push({ label: d.remaining >= 0 ? '剩餘淨利' : '超支', value: Math.abs(d.remaining), color: remainCol });
