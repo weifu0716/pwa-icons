@@ -942,6 +942,7 @@ input[type=number] { -moz-appearance: textfield; }
   <div class="tabs">
     <button class="tab active" data-tab="closing" onclick="switchTab('closing')">打烊結算</button>
     <button class="tab" data-tab="consumables" onclick="switchTab('consumables')">耗材回報</button>
+    <button class="tab" data-tab="bill" onclick="switchTab('bill')">水電帳單</button>
   </div>
 </header>
 
@@ -1132,6 +1133,70 @@ input[type=number] { -moz-appearance: textfield; }
 </div>
 </div>
 
+<!-- ===== TAB 3：水電帳單 ===== -->
+<div class="page" id="page-bill">
+<div class="container">
+
+  <div class="card" id="cardBillBasic">
+    <div class="card-head">
+      <span class="card-emoji">📋</span><span class="card-title">基本資料</span>
+    </div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field"><label class="field-label">店名</label>
+          <select class="field-select" id="billStore" onchange="loadActiveBills()">
+            <option value="南郭店">南郭店</option>
+            <option value="永安店">永安店</option>
+            <option value="彰南店">彰南店</option>
+            <option value="鹿港店">鹿港店</option>
+            <option value="秀水店">秀水店</option>
+            <option value="頂番店">頂番店</option>
+            <option value="和美店">和美店</option>
+            <option value="內新店">內新店</option>
+            <option value="大埔餐車">大埔餐車</option>
+            <option value="花壇餐車">花壇餐車</option>
+          </select>
+        </div>
+        <div class="field"><label class="field-label">類型</label>
+          <select class="field-select" id="billType">
+            <option value="電">電費</option>
+            <option value="水">水費</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:0.76rem; color:var(--teal); margin-top:6px; padding: 0 2px;">
+        💡 收到帳單就拍照填一次。台電/台水抄表時間每次都不同，照帳單上的「電費期間」「用水期間」抄就好。
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="cardBillCurrent">
+    <div class="card-head">
+      <span class="card-emoji">📊</span><span class="card-title">目前生效中的帳單</span>
+    </div>
+    <div class="card-body">
+      <div id="billCurrentInfo" style="font-size:0.92rem; color:#555;">載入中...</div>
+    </div>
+  </div>
+
+  <div class="card" id="cardBillNew">
+    <div class="card-head">
+      <span class="card-emoji">🧾</span><span class="card-title">新增帳單</span>
+    </div>
+    <div class="card-body">
+      <div class="field-row">
+        <div class="field"><label class="field-label">起算日</label><input type="date" class="field-input" id="billStart"></div>
+        <div class="field"><label class="field-label">結束日</label><input type="date" class="field-input" id="billEnd"></div>
+      </div>
+      <div class="field"><label class="field-label">金額</label><input type="number" class="field-input" id="billAmount" placeholder="例：6000" oninput="calcBillPerDay()"></div>
+      <div id="billPerDayHint" style="font-size:0.85rem; color:var(--teal); padding:4px 2px;"></div>
+      <div class="field"><label class="field-label">備註（選填）</label><input type="text" class="field-input" id="billNote" placeholder="例：台電、夏季尖峰"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
 <!-- 底部 -->
 <div class="bottom-bar">
   <div class="bottom-inner">
@@ -1243,7 +1308,19 @@ function switchTab(tab) {
   document.querySelectorAll('.page').forEach(function(p){
     p.classList.toggle('active', p.id==='page-'+tab);
   });
-  document.getElementById('btnText').textContent = tab==='closing' ? '送出結算' : '送出耗材回報';
+  var btnText = tab === 'closing' ? '送出結算'
+              : tab === 'consumables' ? '送出耗材回報'
+              : '送出帳單';
+  document.getElementById('btnText').textContent = btnText;
+
+  if (tab === 'bill') {
+    var billStore = document.getElementById('billStore');
+    if (billStore && !billStore.value) {
+      var fStore = document.getElementById('fieldStore');
+      if (fStore) billStore.value = fStore.value;
+    }
+    loadActiveBills();
+  }
 }
 
 function toggle(id) { document.getElementById(id).classList.toggle('closed'); }
@@ -1613,6 +1690,75 @@ function collectClosingData() {
   return data;
 }
 
+// ===== 水電帳單 =====
+function collectBillData() {
+  var store = document.getElementById('billStore').value;
+  var billType = document.getElementById('billType').value;
+  var startDate = document.getElementById('billStart').value;
+  var endDate = document.getElementById('billEnd').value;
+  var amount = parseFloat(document.getElementById('billAmount').value);
+  var note = document.getElementById('billNote').value.trim();
+
+  if (!startDate || !endDate) {
+    showModal('⚠️','日期未填','請填寫起算日和結束日（照帳單上的「電費期間」抄）。');
+    return null;
+  }
+  if (new Date(endDate) < new Date(startDate)) {
+    showModal('⚠️','日期錯誤','結束日不能比起算日早。');
+    return null;
+  }
+  if (!amount || amount <= 0) {
+    showModal('⚠️','金額未填','請填寫帳單金額。');
+    return null;
+  }
+  return {
+    action: 'water_bill_submit',
+    store: store, billType: billType,
+    startDate: startDate, endDate: endDate,
+    amount: amount, note: note
+  };
+}
+
+function calcBillPerDay() {
+  var startDate = document.getElementById('billStart').value;
+  var endDate = document.getElementById('billEnd').value;
+  var amount = parseFloat(document.getElementById('billAmount').value);
+  var hint = document.getElementById('billPerDayHint');
+  if (!startDate || !endDate || !amount) { hint.textContent = ''; return; }
+  var days = Math.round((new Date(endDate) - new Date(startDate)) / 86400000) + 1;
+  if (days <= 0) { hint.textContent = ''; return; }
+  var perDay = (amount / days).toFixed(1);
+  hint.textContent = '📐 涵蓋 ' + days + ' 天，每日攤提 $' + perDay + '（實際淨利會用該店實際營業天數重算）';
+}
+
+function loadActiveBills() {
+  var info = document.getElementById('billCurrentInfo');
+  if (!info) return;
+  var store = document.getElementById('billStore').value;
+  info.textContent = '載入中...';
+  var payload = { action: 'get_active_water_bills', store: store };
+  if (typeof API_KEY !== 'undefined') payload.key = API_KEY;
+  fetch(GAS_URL, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(res) {
+    if (res.status !== 'success') { info.textContent = '載入失敗'; return; }
+    var data = JSON.parse(res.message);
+    if (!data.bills || data.bills.length === 0) {
+      info.innerHTML = '<span style="color:#e67e22;">尚無此店帳單，請填第一張</span>';
+      return;
+    }
+    var html = '';
+    data.bills.forEach(function(b) {
+      html += '<div style="margin-bottom:6px;"><b>' + (b.type === '電' ? '⚡電費' : '💧水費') + '</b>：'
+        + '$' + b.amount + ' / ' + b.days + ' 天 = <b>$' + b.perDay + '/天</b>'
+        + '<div style="font-size:0.8rem;color:#7f8c8d;">' + b.startDate + ' ~ ' + b.endDate + '</div></div>';
+    });
+    info.innerHTML = html;
+  }).catch(function(e) { info.textContent = '載入失敗：' + e.message; });
+}
+
 function collectConsumablesData() {
   var items = [];
   CONSUMABLES.forEach(function(name,i){
@@ -1636,6 +1782,9 @@ async function handleSubmit() {
   if (currentTab === 'closing') {
     data = collectClosingData();
     if (!data.recorder) { showModal('⚠️','請填寫紀錄者','紀錄者姓名為必填欄位。'); return; }
+  } else if (currentTab === 'bill') {
+    data = collectBillData();
+    if (!data) return;
   } else {
     data = collectConsumablesData();
     if (!data.items.some(function(it){ return it.qty>0; })) {
@@ -1654,8 +1803,19 @@ async function handleSubmit() {
     });
     var result = await resp.json();
     if (result.status === 'success') {
-      var label = currentTab==='closing' ? '打烊結算' : '耗材回報';
-      showModal('✅','送出成功','「'+data.store+'」的'+label+'資料已成功寫入。');
+      var label = currentTab === 'closing' ? '打烊結算'
+                : currentTab === 'bill' ? '水電帳單'
+                : '耗材回報';
+      var storeName = data.store || '';
+      showModal('✅','送出成功','「'+storeName+'」的'+label+'資料已成功寫入。');
+      if (currentTab === 'bill') {
+        document.getElementById('billStart').value = '';
+        document.getElementById('billEnd').value = '';
+        document.getElementById('billAmount').value = '';
+        document.getElementById('billNote').value = '';
+        document.getElementById('billPerDayHint').textContent = '';
+        loadActiveBills();
+      }
     } else {
       showModal('❌','送出失敗', result.message||'伺服器發生錯誤。');
     }
@@ -1668,7 +1828,9 @@ async function handleSubmit() {
 
 // ===== 清除 =====
 function handleReset() {
-  var label = currentTab==='closing' ? '打烊結算' : '耗材回報';
+  var label = currentTab === 'closing' ? '打烊結算'
+            : currentTab === 'bill' ? '水電帳單'
+            : '耗材回報';
   if (!confirm('確定要清除「'+label+'」所有內容嗎？')) return;
   if (currentTab === 'closing') {
     document.querySelectorAll('#page-closing input[type=number]').forEach(function(el){ el.value=''; });
@@ -1676,6 +1838,12 @@ function handleReset() {
     document.getElementById('fieldRecorder').value='';
     document.getElementById('fieldExpenseNote').value='';
     calc();
+  } else if (currentTab === 'bill') {
+    document.getElementById('billStart').value = '';
+    document.getElementById('billEnd').value = '';
+    document.getElementById('billAmount').value = '';
+    document.getElementById('billNote').value = '';
+    document.getElementById('billPerDayHint').textContent = '';
   } else {
     CONSUMABLES.forEach(function(_,i){
       document.getElementById('cons_qty_'+i).value='';

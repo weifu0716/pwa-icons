@@ -1,6 +1,6 @@
 // 珍北平 打烊結算 PWA — Service Worker
 // 改版必須改 CACHE_VERSION，否則手機上的舊 SW 不會自動更新
-const CACHE_VERSION = 'closing-v1-2026-04-25';
+const CACHE_VERSION = 'closing-v2-2026-04-26-bill';
 const APP_SHELL = [
   './',
   './index.html',
