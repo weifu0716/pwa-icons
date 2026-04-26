@@ -1,51 +1,38 @@
 // 珍北平 打烊結算 PWA — Service Worker
-// 改版必須改 CACHE_VERSION，否則手機上的舊 SW 不會自動更新
-const CACHE_VERSION = 'closing-v2-2026-04-26-bill';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './manifest.json',
-  './favicon.ico',
-  './favicon-96x96.png',
-  './apple-touch-icon.png',
-  './web-app-manifest-192x192.png',
-  './web-app-manifest-512x512.png'
-];
+// 設計原則：每次改 index.html 都把 SW_VERSION 升一級
+// 新 SW 安裝後會：1) 清舊快取  2) 立刻接管  3) 強制所有開著的 PWA 視窗 reload
+// 員工最多打開一次就會自動更新到新版，不用清快取、不用重灌
+const SW_VERSION = 'closing-v3-2026-04-26-auto-update';
 
-// 安裝：預先快取 App Shell
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_VERSION)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  // 安裝完立刻準備接管，不等舊 SW 自己離開
+  self.skipWaiting();
 });
 
-// 啟用：清掉所有舊版快取
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))
-    )).then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    // 1. 砍掉所有舊 Cache Storage
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+
+    // 2. 立刻接管所有 client
+    await self.clients.claim();
+
+    // 3. 強制所有開啟中的 PWA 視窗 reload（拿到新 HTML）
+    const clientList = await self.clients.matchAll({ type: 'window' });
+    for (const client of clientList) {
+      client.navigate(client.url);
+    }
+  })());
 });
 
-// 取資料：Network First（優先網路、順便更新快取；失敗退回快取）
-// 跨網域 / 非 GET 一律不攔截，讓 GAS API 直走網路
+// 導航請求一律走 network-first，永遠拿最新 HTML（避免卡舊頁）
+// 跨網域（GAS API）不攔截，直接走網路
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET') return;
-
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
-
-  event.respondWith(
-    fetch(req)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
-        return res;
-      })
-      .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
-  );
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req, { cache: 'no-store' }).catch(() => caches.match(req))
+    );
+  }
 });
