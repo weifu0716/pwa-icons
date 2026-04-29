@@ -327,7 +327,9 @@ input[type=number] { -moz-appearance: textfield; }
   background: #FFFDF6;
   border: 1px solid var(--paper-dark);
   border-radius: var(--radius);
-  overflow: hidden;
+  /* ★ 改：原本 overflow:hidden 會困住內部 sticky，改 visible 讓表頭可以 stick 在頁面 header 下方 */
+  overflow: visible;
+  isolation: isolate;
 }
 .products-header {
   display: grid;
@@ -338,7 +340,11 @@ input[type=number] { -moz-appearance: textfield; }
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  /* ★ 改：移除 sticky 避免跑版 */
+  /* ★ sticky 在頁面 header 正下方，超出表格範圍才會消失。--header-h 由 JS 動態量測 */
+  position: sticky;
+  top: var(--header-h, 56px);
+  z-index: 90;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 .products-header > div {
   padding: 8px 2px;
@@ -426,6 +432,19 @@ input[type=number] { -moz-appearance: textfield; }
   line-height: 1;
 }
 .product-sold:empty { display: none; }
+.product-trial-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f59f00, #d9480f);
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
 
 .cell {
   position: relative;
@@ -1225,12 +1244,12 @@ var API_KEY = '8a3155a7ba081f0e9a39855a8d7d31a9';  // ★ 必須與後端 程式
 var currentTab = 'closing';
 
 var PRODUCTS = [
-  { key: 'pork',     name: '豬肉餡餅' },
-  { key: 'chive',    name: '韭菜盒子' },
-  { key: 'kimchi',   name: '泡菜餡餅' },
-  { key: 'shandong', name: '山東大餅' },
-  { key: 'cream',    name: '奶油餡餅' },
-  { key: 'sesame',   name: '芝麻餡餅' }
+  { key: 'pork',     name: '豬肉餡餅', status: '常駐', applyTo: '全部' },
+  { key: 'chive',    name: '韭菜盒子', status: '常駐', applyTo: '排除內新' },
+  { key: 'kimchi',   name: '泡菜餡餅', status: '常駐', applyTo: '全部' },
+  { key: 'shandong', name: '山東大餅', status: '常駐', applyTo: '全部' },
+  { key: 'cream',    name: '奶油餡餅', status: '常駐', applyTo: '全部' },
+  { key: 'sesame',   name: '芝麻餡餅', status: '常駐', applyTo: '全部' }
 ];
 
 var DISPLAY_FIELDS = ['inQty','prevRemain','buyTenFree','delivery','scrap','todayRemain'];
@@ -1243,6 +1262,21 @@ var PRICES = {
   default:  { pork:30, chive:30, kimchi:35, shandong:35, cream:15, sesame:15 },
   '內新店': { pork:35, chive:0,  kimchi:35, shandong:40, cream:20, sesame:20 }
 };
+
+// ===== 動態品項：從後端「參數設定」讀取試賣 / 新增的品項 =====
+function shortStoreName(s) { return (s || '').replace(/店$/, '').replace(/餐車$/, ''); }
+function isExcluded(p, store) {
+  var ap = (p.applyTo || '全部').toString().trim();
+  if (!ap || ap === '全部') return false;
+  if (ap.indexOf('排除') === 0) {
+    var rest = ap.slice(2);
+    var ex = rest.split(/[,，、 ]+/).filter(Boolean);
+    var sShort = shortStoreName(store);
+    return ex.indexOf(sShort) !== -1 || ex.indexOf(store) !== -1;
+  }
+  return false;
+}
+function isHidden(p, store) { return p.status === '停售' || isExcluded(p, store); }
 
 var CONSUMABLES = [
   '耐炸油(桶)','豬肉紙袋(束)','韭菜紙袋(束)','泡菜紙袋(束)',
@@ -1297,6 +1331,66 @@ function init() {
   renderConsumables();
   calc();
   updateConsCount();
+
+  // 非阻塞：載完試賣 / 新品項後重 render（fail 也不影響原本 6 品項）
+  loadDynamicItems();
+
+  // ★ 量測頁面 sticky header 的高度，給「產品填寫」表頭做 sticky 用
+  syncHeaderHeight();
+  if (typeof ResizeObserver !== 'undefined') {
+    var ro = new ResizeObserver(syncHeaderHeight);
+    var hEl = document.querySelector('.header');
+    if (hEl) ro.observe(hEl);
+  }
+  window.addEventListener('resize', syncHeaderHeight);
+  window.addEventListener('orientationchange', syncHeaderHeight);
+}
+
+// ★ 把 .header 實際高度寫進 CSS variable --header-h，讓 .products-header 的 sticky top 能對齊
+function syncHeaderHeight() {
+  var h = document.querySelector('.header');
+  if (!h) return;
+  document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}
+
+// 從後端讀取品項清單（含試賣/新增品項），合併進 PRODUCTS + PRICES
+function loadDynamicItems() {
+  fetch(GAS_URL + '?action=getItemsConfig', { redirect: 'follow' })
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (!j || j.status !== 'success' || !Array.isArray(j.items)) return;
+      var byName = {};
+      PRODUCTS.forEach(function(p) { byName[p.name] = p; });
+      var added = 0;
+      j.items.forEach(function(it) {
+        if (!it || !it.name) return;
+        var existing = byName[it.name];
+        if (existing) {
+          if (it.status)  existing.status  = it.status;
+          if (it.applyTo) existing.applyTo = it.applyTo;
+          return;
+        }
+        var dynKey = 'dyn_' + it.name;
+        var defP = parseFloat(it.onsitePrice) || 0;
+        var byStore = it.pricesByStore || {};
+        var nxOverride = (byStore['內新'] && byStore['內新'].現場) || defP;
+        PRICES.default[dynKey]  = defP;
+        PRICES['內新店'][dynKey] = nxOverride;
+        PRODUCTS.push({
+          key:      dynKey,
+          name:     it.name,
+          status:   it.status  || '試賣',
+          applyTo:  it.applyTo || '全部',
+          isDynamic: true
+        });
+        added++;
+      });
+      renderProducts();
+      renderReturnItems();
+      calc();
+      if (added > 0) console.log('[loadDynamicItems] 新增動態品項：' + added);
+    })
+    .catch(function(e) { console.warn('讀取品項設定失敗，使用預設品項', e); });
 }
 
 // ===== Tab =====
@@ -1414,16 +1508,18 @@ function renderProducts() {
   var stepCounter = 0;
 
   PRODUCTS.forEach(function(p, pi) {
-    var hide = isNX && p.key === 'chive';
+    var hide = isHidden(p, store);
     var price = pr[p.key];
+    if (price === undefined) price = 0;
     var row = document.createElement('div');
     row.className = 'product-row' + (hide ? ' disabled' : '');
     row.id = 'card_' + p.key;
 
     // 品名欄
+    var trialBadge = (p.status === '試賣') ? '<span class="product-trial-badge">試賣</span>' : '';
     var nameCell =
       '<div class="product-name-cell">' +
-        '<div class="product-name">'+p.name+(hide?'<br><span style="font-size:0.65rem;color:var(--ink-faint)">不適用</span>':'')+'</div>' +
+        '<div class="product-name">'+p.name+trialBadge+(hide?'<br><span style="font-size:0.65rem;color:var(--ink-faint)">不適用</span>':'')+'</div>' +
         '<div class="product-price">$'+price+' /個</div>' +
         '<div class="product-sold" id="sold_'+p.key+'"></div>' +
       '</div>';
@@ -1471,11 +1567,10 @@ function wireEnterFlow() {
 // ===== 帶回商品 =====
 function renderReturnItems() {
   var store = getStore();
-  var isNX = store === '內新店';
   var body = document.getElementById('returnBody');
   body.innerHTML = '';
   PRODUCTS.forEach(function(p) {
-    if (isNX && p.key === 'chive') return;
+    if (isHidden(p, store)) return;
     var div = document.createElement('div');
     div.className = 'return-item';
     div.innerHTML =
@@ -1544,8 +1639,9 @@ function calc() {
   var totalRev = 0, html = '';
 
   PRODUCTS.forEach(function(p) {
-    if (isNX && p.key === 'chive') return;
+    if (isHidden(p, store)) return;
     var price = pr[p.key];
+    if (price === undefined) price = 0;
     var prev = isTruck ? 0 : gv(p.key+'_prevRemain');
     var inQ = gv(p.key+'_inQty');
     var rem = gv(p.key+'_todayRemain');
@@ -1664,8 +1760,10 @@ function collectClosingData() {
     recorder: document.getElementById('fieldRecorder').value.trim()
   };
 
+  // ★ 只送 6 個 hardcoded 品項的舊欄位（pork/chive/.../sesame_xxx），維持後端 handleClosing 相容
   PRODUCTS.forEach(function(p) {
-    var zero = isNX && p.key === 'chive';
+    if (p.isDynamic) return;
+    var zero = isHidden(p, store);
     ALL_FIELDS.forEach(function(f) {
       if (zero) data[p.key+'_'+f] = 0;
       else if (isTruck && f === 'prevRemain') data[p.key+'_'+f] = 0;
@@ -1675,10 +1773,30 @@ function collectClosingData() {
 
   var returnData = {};
   PRODUCTS.forEach(function(p) {
+    if (p.isDynamic) return;
     var val = gv('return_'+p.key);
     if (val > 0) returnData[p.key] = val;
   });
   data.returnItems = returnData;
+
+  // ★ 動態品項（試賣 / 新增）：寫入「動態品項銷售」工作表，不影響「每日銷售」
+  var dynamicItems = [];
+  PRODUCTS.forEach(function(p) {
+    if (!p.isDynamic) return;
+    if (isHidden(p, store)) return;
+    dynamicItems.push({
+      name:        p.name,
+      status:      p.status || '',
+      inQty:       gv(p.key+'_inQty'),
+      prevRemain:  isTruck ? 0 : gv(p.key+'_prevRemain'),
+      buyTenFree:  gv(p.key+'_buyTenFree'),
+      delivery:    gv(p.key+'_delivery'),
+      scrap:       gv(p.key+'_scrap'),
+      todayRemain: gv(p.key+'_todayRemain'),
+      returnQty:   gv('return_'+p.key)
+    });
+  });
+  data.dynamicItems = dynamicItems;
   data.discount     = gv('fieldDiscount');
   data.cashExpense  = gv('fieldCashExpense');
   data.expenseNote  = document.getElementById('fieldExpenseNote').value.trim();
