@@ -2,7 +2,7 @@
 // 設計原則：每次改 index.html 都把 SW_VERSION 升一級
 // 新 SW 安裝後會：1) 清舊快取  2) 立刻接管  3) 強制所有開著的 PWA 視窗 reload
 // 員工最多打開一次就會自動更新到新版，不用清快取、不用重灌
-const SW_VERSION = 'closing-v5-2026-04-29-trial-picker';
+const SW_VERSION = 'closing-v6-2026-04-29-prevremain-autofill';
 
 self.addEventListener('install', (event) => {
   // 安裝完立刻準備接管，不等舊 SW 自己離開

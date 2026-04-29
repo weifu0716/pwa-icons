@@ -385,6 +385,27 @@ input[type=number] { -moz-appearance: textfield; }
 }
 .mode-banner .mb-tag span { color: #FFFDF6; }
 
+/* ★ 昨剩自動帶入 banner — 警告（>3 天）或找不到紀錄 */
+.prev-remain-banner {
+  padding: 10px 14px;
+  font-family: var(--serif);
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--paper-dark);
+  display: flex; align-items: center; gap: 8px;
+}
+.prev-remain-banner.warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-left: 4px solid var(--warn);
+}
+.prev-remain-banner.empty {
+  background: rgba(0,0,0,0.04);
+  color: #666;
+  border-left: 4px solid #999;
+}
+.prev-remain-banner .pr-icon { font-size: 1rem; flex-shrink: 0; }
+
 /* 餐車模式：隱藏昨剩欄 */
 .products-table.truck-mode .products-header .ph-prev,
 .products-table.truck-mode .product-row .cell-prev { display: none; }
@@ -1136,6 +1157,8 @@ input[type=number] { -moz-appearance: textfield; }
     <div class="card-body" style="padding: 0;">
       <!-- ★ 模式徽章：餐車 / 內新店時顯示 -->
       <div class="mode-banner" id="modeBanner" style="display:none"></div>
+      <!-- ★ 昨剩自動帶入提示：>3 天警告 / 找不到紀錄 -->
+      <div class="prev-remain-banner" id="prevRemainBanner" style="display:none"></div>
       <div class="products-table" id="productsTable">
         <div class="products-header" id="productsHeader">
           <div class="ph-name">品名</div>
@@ -1366,7 +1389,7 @@ input[type=number] { -moz-appearance: textfield; }
 </div>
 
 <script>
-// ===== 設定值 =====
+// ===== 設定值（★ 完全不動）=====
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbyw62uVA1H4M1QMGeDhHd59pqDkiMOZhKqEkmHq0oI-hBVpZKHLVNwMDdLq_1izUWMk/exec';
 var API_KEY = '8a3155a7ba081f0e9a39855a8d7d31a9';  // ★ 必須與後端 程式碼.js 的 API_KEY 完全相同
 var currentTab = 'closing';
@@ -1456,6 +1479,15 @@ function init() {
   var recent = getRecentStore();
   if (recent) document.getElementById('fieldStore').value = recent;
 
+  // 套用最近紀錄者姓名（綁定手機，少填一格）
+  var recentRecorder = getRecentRecorder();
+  if (recentRecorder) document.getElementById('fieldRecorder').value = recentRecorder;
+  // 員工改名字時即時記住（不必等送出）
+  document.getElementById('fieldRecorder').addEventListener('change', function() {
+    var v = (this.value || '').trim();
+    if (v) setRecentRecorder(v);
+  });
+
   renderStoreBar();
   renderProducts();
   renderReturnItems();
@@ -1463,6 +1495,17 @@ function init() {
   renderConsumables();
   calc();
   updateConsCount();
+
+  // ★ 員工手動改昨剩欄位 → 標記 touched，後續自動帶入不再覆蓋
+  document.getElementById('productsBody').addEventListener('input', function(e) {
+    var el = e.target;
+    if (el && el.tagName === 'INPUT' && /_prevRemain$/.test(el.id || '')) {
+      el.dataset.touched = '1';
+    }
+  });
+
+  // ★ 啟動時若已有最近選的店 → 立刻去撈該店的「上一筆紀錄」自動帶入昨剩
+  if (recent) loadLastClosing(recent);
 
   // 非阻塞：載完試賣 / 新品項後重 render（fail 也不影響原本 6 品項）
   loadDynamicItems();
@@ -1540,9 +1583,11 @@ function switchTab(tab) {
               : '送出帳單';
   document.getElementById('btnText').textContent = btnText;
 
+  // 切到水電帳單分頁時自動載入「目前生效中」
   if (tab === 'bill') {
     var billStore = document.getElementById('billStore');
     if (billStore && !billStore.value) {
+      // 預設用打烊頁同樣的店
       var fStore = document.getElementById('fieldStore');
       if (fStore) billStore.value = fStore.value;
     }
@@ -1558,6 +1603,92 @@ function getRecentStore() {
 }
 function setRecentStore(store) {
   try { localStorage.setItem('jbp_recent_store', store); } catch(e) {}
+}
+
+// ===== 紀錄者姓名記憶（綁定手機，員工不用每天填）=====
+function getRecentRecorder() {
+  try { return localStorage.getItem('jbp_recent_recorder') || ''; } catch(e) { return ''; }
+}
+function setRecentRecorder(name) {
+  try { localStorage.setItem('jbp_recent_recorder', name); } catch(e) {}
+}
+
+// ===== 昨剩自動帶入：選店後撈該店上一筆紀錄 =====
+// 公式：明天昨剩 = 上次今日剩餘 − 上次帶回數量
+// 基準是「該店上一筆送出紀錄」，不綁日期-1（員工可能凌晨送昨天的單）
+var LAST_CLOSING_CACHE = null;
+
+function loadLastClosing(store) {
+  if (!store) return;
+  if (isFoodTruck(store)) { clearPrevRemainBanner(); return; } // 餐車昨剩永遠 0
+  var payload = { action: 'getLastClosing', store: store };
+  if (typeof API_KEY !== 'undefined') payload.key = API_KEY;
+  fetch(GAS_URL, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (!res || res.status !== 'success') return;
+      var data;
+      try { data = JSON.parse(res.message); } catch(e) { return; }
+      LAST_CLOSING_CACHE = data;
+      applyLastClosing(data, store);
+    })
+    .catch(function() { /* 靜默失敗，員工可手動填 */ });
+}
+
+function applyLastClosing(data, store) {
+  if (!data) return;
+  if (!data.found) {
+    showPrevRemainBanner('empty', '找不到「' + store + '」紀錄，請手動填寫昨剩。');
+    return;
+  }
+  // 6 個常駐品項：只覆蓋未被員工觸碰過的欄位
+  var items = data.items || {};
+  Object.keys(items).forEach(function(key) {
+    var el = document.getElementById(key + '_prevRemain');
+    if (!el || el.disabled) return;
+    if (el.dataset.touched === '1') return;
+    el.value = items[key];
+  });
+  applyDynamicPrevRemain(data.dynamicItems || {});
+  calc();
+
+  if (data.daysAgo > 3) {
+    showPrevRemainBanner('warn',
+      '上次紀錄為 ' + data.lastDate + '（' + data.daysAgo + ' 天前），間隔較久請確認昨剩是否正確。');
+  } else {
+    clearPrevRemainBanner();
+  }
+}
+
+// 動態品項：把試賣品項的 prevRemain 從 cache 帶入（addTrialItem 加新品項時也會用到）
+function applyDynamicPrevRemain(dynamicItems) {
+  if (!dynamicItems) return;
+  ADDED_TRIAL_NAMES.forEach(function(name) {
+    var prod = PRODUCTS.find(function(p){ return p.name === name; });
+    if (!prod) return;
+    var el = document.getElementById(prod.key + '_prevRemain');
+    if (!el || el.disabled) return;
+    if (el.dataset.touched === '1') return;
+    if (typeof dynamicItems[name] === 'number') el.value = dynamicItems[name];
+  });
+}
+
+function showPrevRemainBanner(type, msg) {
+  var b = document.getElementById('prevRemainBanner');
+  if (!b) return;
+  b.className = 'prev-remain-banner ' + type;
+  var icon = type === 'warn' ? '⚠️' : 'ℹ️';
+  b.innerHTML = '<span class="pr-icon">' + icon + '</span><span>' + msg + '</span>';
+  b.style.display = '';
+}
+function clearPrevRemainBanner() {
+  var b = document.getElementById('prevRemainBanner');
+  if (!b) return;
+  b.style.display = 'none';
+  b.innerHTML = '';
 }
 function storeIcon(store) { return isFoodTruck(store) ? '🚚' : '🏪'; }
 
@@ -1781,6 +1912,10 @@ function addTrialItem(name) {
   renderProducts();
   renderReturnItems();
   renderTrialAddSection();
+  // 從快取帶入該試賣品項的昨剩（若有）
+  if (LAST_CLOSING_CACHE && LAST_CLOSING_CACHE.dynamicItems) {
+    applyDynamicPrevRemain(LAST_CLOSING_CACHE.dynamicItems);
+  }
   calc();
   requestAnimationFrame(function() {
     var prod = PRODUCTS.find(function(p){ return p.name === name; });
@@ -1813,11 +1948,15 @@ function onStoreChange() {
   var store = getStore();
   document.getElementById('consStore').value = store;
   setRecentStore(store);
+  LAST_CLOSING_CACHE = null;          // 清舊店快取，避免試賣品項帶入錯誤
+  clearPrevRemainBanner();
   renderStoreBar();
   renderProducts();
   renderReturnItems();
   renderTrialAddSection();
   calc();
+  // ★ 換店 → 撈該店上一筆，自動帶入昨剩；餐車不打 API（昨剩永遠 0）
+  if (!isFoodTruck(store)) loadLastClosing(store);
 }
 
 // ===== 耗材 =====
@@ -1877,8 +2016,8 @@ function calc() {
     var scr = gv(p.key+'_scrap');
     var b10 = gv(p.key+'_buyTenFree');
     var del = gv(p.key+'_delivery');
-    var ret = gv('return_'+p.key);
-    var sold = (prev + inQ) - (rem + scr + b10 + del + ret);
+    // ★ 帶回不算進「售出」— 帶回是純庫存調整（調回總部/別店），不影響營業額與應有現金
+    var sold = (prev + inQ) - (rem + scr + b10 + del);
     var rev = sold * price;
     totalRev += rev;
     var se = document.getElementById('sold_'+p.key);
@@ -2132,7 +2271,7 @@ async function handleSubmit() {
     if (!data.recorder) { showModal('⚠️','請填寫紀錄者','紀錄者姓名為必填欄位。'); return; }
   } else if (currentTab === 'bill') {
     data = collectBillData();
-    if (!data) return;
+    if (!data) return; // collectBillData 已經顯示 modal
   } else {
     data = collectConsumablesData();
     if (!data.items.some(function(it){ return it.qty>0; })) {
@@ -2155,7 +2294,10 @@ async function handleSubmit() {
                 : currentTab === 'bill' ? '水電帳單'
                 : '耗材回報';
       var storeName = data.store || '';
+      // 送出成功時記住紀錄者姓名（綁定手機，下次自動帶入）
+      if (currentTab === 'closing' && data.recorder) setRecentRecorder(data.recorder);
       showModal('✅','送出成功','「'+storeName+'」的'+label+'資料已成功寫入。');
+      // 水電帳單送完清空 + 重新載入「目前生效」
       if (currentTab === 'bill') {
         document.getElementById('billStart').value = '';
         document.getElementById('billEnd').value = '';
@@ -2181,15 +2323,24 @@ function handleReset() {
             : '耗材回報';
   if (!confirm('確定要清除「'+label+'」所有內容嗎？')) return;
   if (currentTab === 'closing') {
-    document.querySelectorAll('#page-closing input[type=number]').forEach(function(el){ el.value=''; });
+    document.querySelectorAll('#page-closing input[type=number]').forEach(function(el){
+      el.value='';
+      if (el.dataset && el.dataset.touched) delete el.dataset.touched;
+    });
     PRODUCTS.forEach(function(p){ var el=document.getElementById('return_'+p.key); if(el) el.value=''; });
-    document.getElementById('fieldRecorder').value='';
+    // 紀錄者刻意不清空（記憶綁定手機，員工不用每天重填）
     document.getElementById('fieldExpenseNote').value='';
     ADDED_TRIAL_NAMES = [];
     renderProducts();
     renderReturnItems();
     renderTrialAddSection();
     calc();
+    // 清空後重新帶入昨剩
+    var s = getStore();
+    if (s && !isFoodTruck(s)) {
+      if (LAST_CLOSING_CACHE) applyLastClosing(LAST_CLOSING_CACHE, s);
+      else loadLastClosing(s);
+    }
   } else if (currentTab === 'bill') {
     document.getElementById('billStart').value = '';
     document.getElementById('billEnd').value = '';
