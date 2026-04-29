@@ -417,6 +417,10 @@ input[type=number] { -moz-appearance: textfield; }
   line-height: 1.1;
   white-space: nowrap;
 }
+.product-name.long {
+  font-size: 0.78rem;
+  letter-spacing: 0.3px;
+}
 .product-price {
   font-family: var(--mono);
   font-size: 0.68rem;
@@ -435,16 +439,130 @@ input[type=number] { -moz-appearance: textfield; }
 .product-trial-badge {
   display: inline-block;
   font-family: var(--mono);
-  font-size: 0.58rem;
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #f59f00, #d9480f);
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  margin-left: 3px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+/* 試賣品項新增區塊（在表格下方，預設摺疊） */
+.trial-add-section {
+  border-top: 2px dashed var(--paper-dark);
+  background: var(--paper-2);
+}
+.trial-add-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--teal);
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.trial-add-btn .plus {
+  font-size: 1.1rem;
+  font-weight: 900;
+  width: 22px; height: 22px;
+  border: 2px solid var(--teal);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.trial-add-btn .arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+.trial-add-btn.open .arrow { transform: rotate(180deg); }
+.trial-add-btn:hover { background: rgba(0, 119, 119, 0.06); }
+.trial-picker {
+  display: none;
+  border-top: 1px solid var(--paper-dark);
+  padding: 6px 8px;
+}
+.trial-picker.open { display: block; }
+.trial-picker-empty {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.trial-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin: 4px 0;
+  background: var(--paper);
+  border: 1px solid var(--paper-dark);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.trial-picker-item:hover {
+  background: var(--warn-bg);
+  border-color: #f59f00;
+}
+.trial-picker-name {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: 0.92rem;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+.trial-picker-price {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--stamp);
+  font-weight: 700;
+}
+.trial-picker-tag {
+  display: inline-block;
+  font-size: 0.55rem;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, #f59f00, #d9480f);
   padding: 1px 5px;
   border-radius: 3px;
-  letter-spacing: 1px;
-  margin-left: 4px;
-  vertical-align: middle;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  vertical-align: 2px;
 }
+
+/* 試賣 row 上的「移除」鈕 */
+.trial-remove-btn {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 18px; height: 18px;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  color: var(--ink-faint);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.trial-remove-btn:hover { background: var(--err, #d9480f); color: #fff; }
+.product-row.is-trial .product-name-cell { position: relative; padding-right: 24px; }
 
 .cell {
   position: relative;
@@ -1029,6 +1147,16 @@ input[type=number] { -moz-appearance: textfield; }
           <div class="ph-em">今剩</div>
         </div>
         <div id="productsBody"></div>
+
+        <!-- 試賣 / 新增品項：預設摺疊，按按鈕展開後選擇加進表格 -->
+        <div class="trial-add-section" id="trialAddSection" style="display:none">
+          <button class="trial-add-btn" id="trialAddBtn" type="button" onclick="toggleTrialPicker()">
+            <span class="plus">+</span>
+            <span>新增試賣品項</span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="trial-picker" id="trialPicker"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1278,6 +1406,9 @@ function isExcluded(p, store) {
 }
 function isHidden(p, store) { return p.status === '停售' || isExcluded(p, store); }
 
+// 已被「+ 新增試賣品項」加進表格的品項名稱，重 render 時這些 row 會出現
+var ADDED_TRIAL_NAMES = [];
+
 var CONSUMABLES = [
   '耐炸油(桶)','豬肉紙袋(束)','韭菜紙袋(束)','泡菜紙袋(束)',
   '大餅紙袋(束)','奶油紙袋(束)','芝麻紙袋(束)','四兩塑膠袋(包)',
@@ -1328,6 +1459,7 @@ function init() {
   renderStoreBar();
   renderProducts();
   renderReturnItems();
+  renderTrialAddSection();
   renderConsumables();
   calc();
   updateConsCount();
@@ -1387,6 +1519,7 @@ function loadDynamicItems() {
       });
       renderProducts();
       renderReturnItems();
+      renderTrialAddSection();
       calc();
       if (added > 0) console.log('[loadDynamicItems] 新增動態品項：' + added);
     })
@@ -1509,17 +1642,21 @@ function renderProducts() {
 
   PRODUCTS.forEach(function(p, pi) {
     var hide = isHidden(p, store);
+    if (p.isDynamic && ADDED_TRIAL_NAMES.indexOf(p.name) === -1) return;
     var price = pr[p.key];
     if (price === undefined) price = 0;
     var row = document.createElement('div');
-    row.className = 'product-row' + (hide ? ' disabled' : '');
+    var rowCls = 'product-row' + (hide ? ' disabled' : '') + (p.isDynamic ? ' is-trial' : '');
+    row.className = rowCls;
     row.id = 'card_' + p.key;
 
     // 品名欄
+    var nameLong = (p.name || '').length >= 5 ? ' long' : '';
     var trialBadge = (p.status === '試賣') ? '<span class="product-trial-badge">試賣</span>' : '';
+    var removeBtn  = (p.isDynamic) ? '<button type="button" class="trial-remove-btn" title="移除此品項" onclick="removeTrialItem(\''+p.name.replace(/'/g, "\\'")+'\')">×</button>' : '';
     var nameCell =
-      '<div class="product-name-cell">' +
-        '<div class="product-name">'+p.name+trialBadge+(hide?'<br><span style="font-size:0.65rem;color:var(--ink-faint)">不適用</span>':'')+'</div>' +
+      '<div class="product-name-cell">' + removeBtn +
+        '<div class="product-name'+nameLong+'">'+p.name+trialBadge+(hide?'<br><span style="font-size:0.65rem;color:var(--ink-faint)">不適用</span>':'')+'</div>' +
         '<div class="product-price">$'+price+' /個</div>' +
         '<div class="product-sold" id="sold_'+p.key+'"></div>' +
       '</div>';
@@ -1571,6 +1708,7 @@ function renderReturnItems() {
   body.innerHTML = '';
   PRODUCTS.forEach(function(p) {
     if (isHidden(p, store)) return;
+    if (p.isDynamic && ADDED_TRIAL_NAMES.indexOf(p.name) === -1) return;
     var div = document.createElement('div');
     div.className = 'return-item';
     div.innerHTML =
@@ -1578,6 +1716,96 @@ function renderReturnItems() {
       '<input type="number" inputmode="numeric" class="return-item-input" id="return_'+p.key+'" placeholder="0" oninput="calc()">';
     body.appendChild(div);
   });
+}
+
+// ===== 試賣品項：下拉新增 =====
+function getTrialCandidates(store) {
+  return PRODUCTS.filter(function(p) {
+    if (!p.isDynamic) return false;
+    if (isHidden(p, store)) return false;
+    return ADDED_TRIAL_NAMES.indexOf(p.name) === -1;
+  });
+}
+
+function renderTrialAddSection() {
+  var section = document.getElementById('trialAddSection');
+  var picker  = document.getElementById('trialPicker');
+  if (!section || !picker) return;
+  var store      = getStore();
+  var candidates = getTrialCandidates(store);
+  var addedCount = ADDED_TRIAL_NAMES.length;
+  if (candidates.length === 0 && addedCount === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  var btn = document.getElementById('trialAddBtn');
+  var label = btn.querySelector('span:nth-child(2)');
+  if (label) {
+    label.textContent = candidates.length === 0 ? '已全部加入（可移除）' : '新增試賣品項';
+  }
+  var pr = (store === '內新店' ? PRICES['內新店'] : PRICES.default);
+  if (candidates.length === 0) {
+    picker.innerHTML = '<div class="trial-picker-empty">已沒有可新增的試賣品項</div>';
+  } else {
+    picker.innerHTML = candidates.map(function(p) {
+      var price = pr[p.key];
+      if (price === undefined) price = 0;
+      var safeName = p.name.replace(/'/g, "\\'");
+      return '<div class="trial-picker-item" onclick="addTrialItem(\''+safeName+'\')">' +
+               '<span class="trial-picker-name">'+p.name+
+                 '<span class="trial-picker-tag">試賣</span>' +
+               '</span>' +
+               '<span class="trial-picker-price">$'+price+' /個</span>' +
+             '</div>';
+    }).join('');
+  }
+}
+
+function toggleTrialPicker() {
+  var btn    = document.getElementById('trialAddBtn');
+  var picker = document.getElementById('trialPicker');
+  if (!btn || !picker) return;
+  var open = !picker.classList.contains('open');
+  picker.classList.toggle('open', open);
+  btn.classList.toggle('open', open);
+}
+
+function addTrialItem(name) {
+  if (!name) return;
+  if (ADDED_TRIAL_NAMES.indexOf(name) === -1) ADDED_TRIAL_NAMES.push(name);
+  var picker = document.getElementById('trialPicker');
+  var btn    = document.getElementById('trialAddBtn');
+  if (picker) picker.classList.remove('open');
+  if (btn)    btn.classList.remove('open');
+  renderProducts();
+  renderReturnItems();
+  renderTrialAddSection();
+  calc();
+  requestAnimationFrame(function() {
+    var prod = PRODUCTS.find(function(p){ return p.name === name; });
+    if (!prod) return;
+    var el = document.getElementById('card_' + prod.key);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+}
+
+function removeTrialItem(name) {
+  var i = ADDED_TRIAL_NAMES.indexOf(name);
+  if (i !== -1) ADDED_TRIAL_NAMES.splice(i, 1);
+  var prod = PRODUCTS.find(function(p){ return p.name === name; });
+  if (prod) {
+    ALL_FIELDS.forEach(function(f) {
+      var el = document.getElementById(prod.key+'_'+f);
+      if (el) el.value = '';
+    });
+    var ret = document.getElementById('return_'+prod.key);
+    if (ret) ret.value = '';
+  }
+  renderProducts();
+  renderReturnItems();
+  renderTrialAddSection();
+  calc();
 }
 
 // ===== 店名變更 =====
@@ -1588,6 +1816,7 @@ function onStoreChange() {
   renderStoreBar();
   renderProducts();
   renderReturnItems();
+  renderTrialAddSection();
   calc();
 }
 
@@ -1784,6 +2013,7 @@ function collectClosingData() {
   PRODUCTS.forEach(function(p) {
     if (!p.isDynamic) return;
     if (isHidden(p, store)) return;
+    if (ADDED_TRIAL_NAMES.indexOf(p.name) === -1) return;
     dynamicItems.push({
       name:        p.name,
       status:      p.status || '',
@@ -1955,6 +2185,10 @@ function handleReset() {
     PRODUCTS.forEach(function(p){ var el=document.getElementById('return_'+p.key); if(el) el.value=''; });
     document.getElementById('fieldRecorder').value='';
     document.getElementById('fieldExpenseNote').value='';
+    ADDED_TRIAL_NAMES = [];
+    renderProducts();
+    renderReturnItems();
+    renderTrialAddSection();
     calc();
   } else if (currentTab === 'bill') {
     document.getElementById('billStart').value = '';
