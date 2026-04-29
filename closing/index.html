@@ -2016,9 +2016,8 @@ function calc() {
     var scr = gv(p.key+'_scrap');
     var b10 = gv(p.key+'_buyTenFree');
     var del = gv(p.key+'_delivery');
-    var ret = gv('return_'+p.key);
-    // ★ 帶回的商品調回總部/別店，沒賣出 → 從售出公式扣掉，營業額才正確
-    var sold = (prev + inQ) - (rem + scr + b10 + del + ret);
+    // ★ 帶回 = 員工已把調走的部分從「今剩」內扣掉的純記錄欄位，不參與 sold 計算
+    var sold = (prev + inQ) - (rem + scr + b10 + del);
     var rev = sold * price;
     totalRev += rev;
     var se = document.getElementById('sold_'+p.key);
