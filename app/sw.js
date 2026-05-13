@@ -1,6 +1,6 @@
 // 珍北平現金簿 Service Worker
 // 改版時只要改 CACHE_VERSION，啟用時就會清掉舊快取
-const CACHE_VERSION = 'v2-2026-04-25';
+const CACHE_VERSION = 'v7-2026-05-13-accountant-xlsx';
 const CACHE_NAME = 'cashbook-' + CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json'];
 
@@ -11,11 +11,15 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// activate：清舊快取 + 通知 client 有新版（不強制 reload，避免清空記帳 form）
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-    )).then(() => self.clients.claim())
+    ))
+    .then(() => self.clients.claim())
+    .then(() => self.clients.matchAll({ type: 'window' }))
+    .then((clients) => clients.forEach((c) => c.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION })))
   );
 });
 

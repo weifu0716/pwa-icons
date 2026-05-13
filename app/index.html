@@ -438,14 +438,41 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .catrow:last-child { border-bottom: none; }
-.catrow-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.catrow-top {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+  cursor: pointer; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.catrow-top:active { opacity: .6; }
 .cdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .cname { flex: 1; font-size: 14px; font-weight: 500; }
 .camts { text-align: right; font-size: 13px; }
 .camts .ci { color: var(--green); font-weight: 600; }
 .camts .ce { color: var(--red); font-weight: 600; }
+.carrow {
+  width: 14px; flex-shrink: 0; font-size: 11px; color: #999;
+  transition: transform .2s;
+  margin-left: 4px;
+}
+.catrow.open .carrow { transform: rotate(90deg); }
 .pbar { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; }
 .pfill { height: 100%; border-radius: 3px; transition: width .5s; }
+/* 分類展開明細 */
+.cdetail {
+  margin-top: 8px; padding: 6px 8px 4px; background: #fafafa;
+  border-radius: 6px; font-size: 13px;
+}
+.cd-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 2px; border-bottom: 1px dashed #eee;
+}
+.cd-row:last-child { border-bottom: none; }
+.cd-name { flex: 1; color: #333; word-break: break-all; }
+.cd-name.blank { color: #999; font-style: italic; }
+.cd-cnt { color: #999; font-size: 12px; min-width: 28px; text-align: right; }
+.cd-amt { color: #333; font-weight: 600; min-width: 80px; text-align: right; }
+.cd-loading { padding: 8px 4px; color: #999; font-size: 12px; }
+.cd-empty { padding: 8px 4px; color: #999; font-size: 12px; text-align: center; }
 
 /* ── Cash Count ── */
 .denom-grid {
@@ -668,6 +695,38 @@ body {
   color: var(--sub);
   font-size: 14px;
 }
+
+/* ── 列印月報（PDF 用）─────────────────── */
+.print-btn {
+  background: #1565c0; color: #fff; border: none; border-radius: 6px;
+  padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  margin-bottom: 10px;
+}
+.print-btn:hover { background: #0d47a1; }
+.export-btn {
+  background: #2e7d32; color: #fff; border: none; border-radius: 6px;
+  padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  margin-bottom: 10px; margin-left: 8px;
+}
+.export-btn:hover { background: #1b5e20; }
+.export-btn:disabled { background: #9e9e9e; cursor: not-allowed; }
+.print-header { display: none; }
+.print-foot { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; size: A4 portrait; }
+  body { background: #fff !important; }
+  .hdr, .nav, .mpick, .print-btn, .export-btn, .tab:not(#tab-report) { display: none !important; }
+  #tab-report { display: block !important; padding: 0 !important; }
+  .print-header { display: block !important; margin-bottom: 14px; border-bottom: 2px solid #c62828; padding-bottom: 8px; }
+  .print-header h1 { margin: 0; font-size: 20px; color: #c62828; }
+  .print-header .sub { font-size: 12px; color: #666; margin-top: 2px; }
+  .print-foot { display: block !important; margin-top: 16px; font-size: 10px; color: #999; text-align: right; }
+  .card { box-shadow: none !important; border: 1px solid #ddd; page-break-inside: avoid; }
+  .sgrid { gap: 6px !important; }
+  .sc { padding: 8px !important; }
+  .catrow { page-break-inside: avoid; }
+  .cdetail { display: block !important; }
+}
 </style>
 </head>
 <body>
@@ -705,6 +764,7 @@ body {
       <button class="qbtn exp"  onclick="quickFill('珍北平(豬肉 丸星)','支出','公司用(已提供憑證)','珍北平固定支出',this)">豬肉(丸星)</button>
       <button class="qbtn exp"  onclick="quickFill('珍北平(豬肉 大方)','支出','公司用(已提供憑證)','珍北平固定支出',this)">豬肉(大方)</button>
       <button class="qbtn exp"  onclick="quickFill('珍北平備用金','支出','公司用(已提供憑證)','珍北平固定支出',this)">備用金補充</button>
+      <button class="qbtn inc"  onclick="quickEpoch(this)">📅 月初期初金額</button>
     </div>
   </div>
 
@@ -1080,6 +1140,28 @@ function loadBal() {
 
 // ── Quick Fill ─────────────────────────────
 let lastQBtn = null;
+
+// 月初期初金額快塑
+function quickEpoch(btn) {
+  if (lastQBtn && lastQBtn !== btn) lastQBtn.classList.remove('sel');
+  btn.classList.toggle('sel');
+  lastQBtn = btn.classList.contains('sel') ? btn : null;
+  if (!btn.classList.contains('sel')) return;
+
+  const t = new Date();
+  const firstOfMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+  const iso = firstOfMonth.getFullYear() + '-' +
+              String(firstOfMonth.getMonth() + 1).padStart(2, '0') + '-01';
+  setType('收入');
+  document.getElementById('date').value = iso;
+  document.getElementById('desc').value = '期初金額';
+  document.getElementById('note2').value = '營業額收入';
+  document.getElementById('note3').value = '珍北平收入';
+  document.getElementById('amount').focus();
+  document.getElementById('amount').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  toast('填入上月底盤點實物總額');
+}
+
 function quickFill(desc, type, note2, note3, btn) {
   // 清除上一顆選中狀態
   if (lastQBtn && lastQBtn !== btn) lastQBtn.classList.remove('sel');
@@ -1122,6 +1204,8 @@ function submit() {
   if (!amount || parseFloat(amount) <= 0) { toast('請輸入金額'); return; }
   if (!date)                               { toast('請選擇日期'); return; }
   if (!desc)                               { toast('請輸入說明'); return; }
+  if (!note2)                              { toast('請設定備註2（會計）'); return; }
+  if (!note3)                              { toast('請設定備註3（月報分類）'); return; }
 
   const btn = document.getElementById('sbtn');
   btn.disabled = true;
@@ -1349,6 +1433,7 @@ function chRMonth(d) {
   if (rM > 12) { rM = 1; rY++; }
   if (rM < 1)  { rM = 12; rY--; }
   updMlbls();
+  for (const k in _catDetailCache) delete _catDetailCache[k];
   loadReport();
 }
 function chDMonth(d) {
@@ -1366,17 +1451,30 @@ function loadTxns() {
   wrap.innerHTML = '<div class="loading">載入中…</div>';
   bar.style.display = 'none';
 
-  api('getTransactions', { year: lY, month: lM })
-    .then(txns => {
-      if (!txns || !txns.length) {
+  api('getMonthList', { year: lY, month: lM })
+    .then(data => {
+      const opening = (data && data.opening) || 0;
+      const txns = (data && data.items) || [];
+      if (!txns.length) {
         wrap.innerHTML = '<div class="card"><div class="empty">本月尚無記錄</div></div>';
         return;
       }
       let ti = 0, te = 0;
       const WDAYS = ['週日','週一','週二','週三','週四','週五','週六'];
 
-      // 先按日期排序：新→舊；同日按 rowIndex 降冪（晚輸入的在上）
-      const sorted = [...txns].sort((a, b) => {
+      // 先按日期升冪 + 同日按 rowIndex 升冪累積 runningBalance（補登舊日期會連動）
+      const asc = [...txns].sort((a, b) => {
+        if (a.dateISO !== b.dateISO) return a.dateISO < b.dateISO ? -1 : 1;
+        return (a.rowIndex || 0) - (b.rowIndex || 0);
+      });
+      let bal = opening;
+      asc.forEach(t => {
+        bal += (t.income || 0) - (t.expense || 0);
+        t.runningBalance = bal;
+      });
+
+      // 顯示時按日期降冪 + 同日按 rowIndex 降冪（晚輸入的在上）
+      const sorted = [...asc].sort((a, b) => {
         if (a.dateISO !== b.dateISO) return a.dateISO < b.dateISO ? 1 : -1;
         return (b.rowIndex || 0) - (a.rowIndex || 0);
       });
@@ -1432,7 +1530,7 @@ function loadTxns() {
               </div>
               <div class="txn-right">
                 <div class="txn-amt ${cls}">${sign}${fmt(num)}</div>
-                <div class="txn-bal">餘 ${fmt(t.balance)}</div>
+                <div class="txn-bal">餘 ${fmt(t.runningBalance)}</div>
               </div>
             </div>`;
         });
@@ -1467,8 +1565,38 @@ function loadReport() {
       const nc  = d.netFlow >= 0 ? 'pos' : 'neg';
       const ns  = d.netFlow >= 0 ? '+' : '−';
       const nv  = Math.abs(d.netFlow);
+      const ymStr = `${d.year}年${String(d.month).padStart(2,'0')}月`;
+      const closingCount = d.closingCount;
+      const closingCard = d.hasEpoch ? `
+          <div class="sc">
+            <div class="slbl">月初期初</div>
+            <div class="sval">${fmt(d.opening)}</div>
+          </div>
+          <div class="sc">
+            <div class="slbl">月底結餘（應有）</div>
+            <div class="sval">${fmt(d.closing)}</div>
+          </div>` : '';
+      const closingCountCard = closingCount ? `
+        <div class="card">
+          <div class="sec-title">月底盤點（${closingCount.time}）</div>
+          <div class="sgrid">
+            <div class="sc"><div class="slbl">實物</div><div class="sval">${fmt(closingCount.actual)}</div></div>
+            <div class="sc"><div class="slbl">帳上</div><div class="sval">${fmt(closingCount.book)}</div></div>
+            <div class="sc full">
+              <div class="slbl">差異</div>
+              <div class="sval ${closingCount.diff >= 0 ? 'pos' : 'neg'}">${closingCount.diff >= 0 ? '+' : '−'}${fmt(Math.abs(closingCount.diff))}</div>
+            </div>
+          </div>
+        </div>` : '';
       let html = `
+        <div class="print-header">
+          <h1>珍北平現金簿 — ${ymStr} 月報</h1>
+          <div class="sub">產出時間 ${new Date().toLocaleString('zh-TW')}　|　${d.hasEpoch ? '已封帳' : '未登期初'}</div>
+        </div>
+        <button class="print-btn" onclick="window.print()">🖨 列印 / 存為 PDF</button>
+        <button class="export-btn" id="exp-btn" onclick="exportAccountantXlsx()">📊 匯出會計師版 Excel</button>
         <div class="sgrid">
+          ${closingCard}
           <div class="sc">
             <div class="slbl">本月收入</div>
             <div class="sval inc">+${fmt(d.totalIncome)}</div>
@@ -1486,6 +1614,7 @@ function loadReport() {
             <div class="sval">${fmt(d.currentBalance)}</div>
           </div>
         </div>
+        ${closingCountCard}
         <div class="card">
           <div class="sec-title">分類明細</div>`;
 
@@ -1496,26 +1625,201 @@ function loadReport() {
         const col = colorFor(cat);
         const pctE = Math.round((v.expense / te) * 100);
         const pctI = Math.round((v.income  / ti) * 100);
+        const catEsc = esc(cat).replace(/'/g, "\\'");
         html += `
-          <div class="catrow">
-            <div class="catrow-top">
+          <div class="catrow" data-cat="${esc(cat)}">
+            <div class="catrow-top" onclick="toggleCatDetail(this, '${catEsc}')">
               <div class="cdot" style="background:${col}"></div>
               <div class="cname">${esc(cat)}</div>
               <div class="camts">
                 ${v.income  ? `<div class="ci">+${fmt(v.income)}</div>` : ''}
                 ${v.expense ? `<div class="ce">−${fmt(v.expense)}</div>` : ''}
               </div>
+              <div class="carrow">▶</div>
             </div>
             ${v.income  ? `<div class="pbar"><div class="pfill" style="width:${pctI}%;background:${col}"></div></div>` : ''}
             ${v.expense ? `<div class="pbar"${v.income?' style="margin-top:4px"':''}><div class="pfill" style="width:${pctE}%;background:${col}"></div></div>` : ''}
+            <div class="cdetail" style="display:none"></div>
           </div>`;
       });
       html += '</div>';
+      html += `<div class="print-foot">珍北平餐飲集團・現金簿月報・${new Date().toLocaleDateString('zh-TW')}</div>`;
       wrap.innerHTML = html;
     })
     .catch(() => {
       wrap.innerHTML = '<div class="empty">載入失敗</div>';
     });
+}
+
+// 月報分類明細 — 快取（key：year-month-category）
+const _catDetailCache = {};
+
+function toggleCatDetail(topEl, category) {
+  const row = topEl.parentElement;
+  const detail = row.querySelector('.cdetail');
+  const isOpen = row.classList.contains('open');
+  if (isOpen) {
+    row.classList.remove('open');
+    detail.style.display = 'none';
+    return;
+  }
+  row.classList.add('open');
+  detail.style.display = 'block';
+
+  const key = `${rY}-${rM}-${category}`;
+  if (_catDetailCache[key]) {
+    renderCatDetail(detail, _catDetailCache[key]);
+    return;
+  }
+  detail.innerHTML = '<div class="cd-loading">載入中…</div>';
+  api('getCategoryDetails', { category, year: rY, month: rM })
+    .then(arr => {
+      _catDetailCache[key] = arr || [];
+      if (row.classList.contains('open')) {
+        renderCatDetail(detail, _catDetailCache[key]);
+      }
+    })
+    .catch(() => {
+      detail.innerHTML = '<div class="cd-empty">載入失敗</div>';
+    });
+}
+
+function renderCatDetail(detail, arr) {
+  if (!arr || arr.length === 0) {
+    detail.innerHTML = '<div class="cd-empty">本月無紀錄</div>';
+    return;
+  }
+  let html = '';
+  arr.forEach(item => {
+    const blank = item.name === '未填品名';
+    html += `
+      <div class="cd-row">
+        <div class="cd-name${blank ? ' blank' : ''}">${esc(item.name)}</div>
+        <div class="cd-cnt">×${item.count}</div>
+        <div class="cd-amt">$${fmt(item.total)}</div>
+      </div>`;
+  });
+  detail.innerHTML = html;
+}
+
+// ── 會計師版 Excel 匯出 ─────────────────────
+const SHEETJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+let _sheetjsLoading = null;
+function loadSheetJS() {
+  if (window.XLSX) return Promise.resolve();
+  if (_sheetjsLoading) return _sheetjsLoading;
+  _sheetjsLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = SHEETJS_URL;
+    s.onload = () => resolve();
+    s.onerror = () => { _sheetjsLoading = null; reject(new Error('無法載入 Excel 函式庫（需要網路）')); };
+    document.head.appendChild(s);
+  });
+  return _sheetjsLoading;
+}
+
+async function exportAccountantXlsx() {
+  const btn = document.getElementById('exp-btn');
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '準備中…'; }
+  try {
+    await loadSheetJS();
+    const [list, sum] = await Promise.all([
+      api('getMonthList', { year: rY, month: rM }),
+      api('getMonthlySummary', { year: rY, month: rM })
+    ]);
+    const wb = buildAccountantWorkbook(list, sum, rY, rM);
+    const fname = `珍北平現金簿_${rY}年${String(rM).padStart(2,'0')}月_會計師版.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast('已匯出 ' + fname);
+  } catch (e) {
+    toast('匯出失敗：' + (e && e.message ? e.message : e));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = orig || '📊 匯出會計師版 Excel'; }
+  }
+}
+
+function buildAccountantWorkbook(list, sum, year, month) {
+  const wb = XLSX.utils.book_new();
+  const ymStr = `${year}年${String(month).padStart(2,'0')}月`;
+
+  // Sheet 1：月度摘要
+  const s1 = [
+    ['珍北平現金簿 — ' + ymStr + ' 月度結帳報告'],
+    ['產出時間', new Date().toLocaleString('zh-TW')],
+    ['封帳狀態', sum.hasEpoch ? '已登期初（封帳）' : '未登期初（按日期過濾，建議補登期初）'],
+    [],
+    ['項目', '金額'],
+    ['月初期初', sum.opening || 0],
+    ['本月收入合計', sum.totalIncome || 0],
+    ['本月支出合計', sum.totalExpense || 0],
+    ['本月淨流量', sum.netFlow || 0],
+    ['月底結餘（應有）', sum.closing || 0],
+    ['目前現金餘額（產出當下）', sum.currentBalance || 0],
+    ['本月交易筆數', sum.count || 0]
+  ];
+  if (sum.closingCount) {
+    s1.push([]);
+    s1.push(['── 月底盤點 ──']);
+    s1.push(['盤點時間', sum.closingCount.time]);
+    s1.push(['實物合計', sum.closingCount.actual]);
+    s1.push(['帳上餘額', sum.closingCount.book]);
+    s1.push(['差異', sum.closingCount.diff]);
+  }
+  const ws1 = XLSX.utils.aoa_to_sheet(s1);
+  ws1['!cols'] = [{ wch: 26 }, { wch: 22 }];
+  XLSX.utils.book_append_sheet(wb, ws1, '月度摘要');
+
+  // Sheet 2：逐筆明細
+  const items = (list.items || [])
+    .filter(t => !/期初|結餘|上月|開帳/.test(t.description))
+    .slice()
+    .sort((a, b) => (a.dateISO || '').localeCompare(b.dateISO || '') || ((a.rowIndex || 0) - (b.rowIndex || 0)));
+  const s2 = [['日期', '說明', '收入', '支出', '餘額', '備註2(會計)', '備註3(月報分類)']];
+  let inSum = 0, outSum = 0;
+  items.forEach(t => {
+    s2.push([
+      t.dateISO || '',
+      t.description || '',
+      t.income || '',
+      t.expense || '',
+      t.balance,
+      t.note2 || '',
+      t.note3 || ''
+    ]);
+    inSum += t.income || 0;
+    outSum += t.expense || 0;
+  });
+  s2.push([]);
+  s2.push(['合計', '', inSum, outSum, '', '', '']);
+  const ws2 = XLSX.utils.aoa_to_sheet(s2);
+  ws2['!cols'] = [
+    { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 24 }, { wch: 22 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, '逐筆明細');
+
+  // Sheet 3：分類小計
+  const te = sum.totalExpense || 0;
+  const ti = sum.totalIncome || 0;
+  const s3 = [['分類', '收入', '支出', '淨額', '占支出比(%)', '占收入比(%)']];
+  Object.entries(sum.byCat || {}).forEach(([cat, v]) => {
+    if (!v.income && !v.expense) return;
+    s3.push([
+      cat,
+      v.income || '',
+      v.expense || '',
+      (v.income || 0) - (v.expense || 0),
+      te ? +((v.expense / te) * 100).toFixed(1) : '',
+      ti ? +((v.income / ti) * 100).toFixed(1) : ''
+    ]);
+  });
+  s3.push([]);
+  s3.push(['合計', ti, te, ti - te, '', '']);
+  const ws3 = XLSX.utils.aoa_to_sheet(s3);
+  ws3['!cols'] = [{ wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, ws3, '分類小計');
+
+  return wb;
 }
 
 // ── Dashboard ──────────────────────────────
@@ -1683,8 +1987,19 @@ function toast(msg) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then((reg) => console.log('[PWA] SW 已註冊', reg.scope))
+      .then((reg) => {
+        console.log('[PWA] SW 已註冊', reg.scope);
+        reg.update().catch(() => {});
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      })
       .catch((err) => console.warn('[PWA] SW 註冊失敗', err));
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'SW_UPDATED') {
+        console.log('[PWA] 新版已就位：', e.data.version, '— 下次重開或切回前景生效');
+      }
+    });
   });
 }
 </script>
