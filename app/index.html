@@ -914,14 +914,26 @@ body {
       </div>
     </div>
 
-    <!-- 金庫 / 備用金 -->
+    <!-- 現金資產分項：金庫/備用錢盒/備用零錢 進對帳；銀行兩筆只記錄不進對帳 -->
     <div class="extra-item">
       <label>金庫金額（直接填總額）</label>
       <input id="csafe" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
     </div>
     <div class="extra-item">
-      <label>備用金金額（直接填總額）</label>
-      <input id="cpetty" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+      <label>備用錢盒（直接填總額）</label>
+      <input id="cbox" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+    </div>
+    <div class="extra-item">
+      <label>備用零錢（直接填總額）</label>
+      <input id="ccoin" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+    </div>
+    <div class="extra-item">
+      <label>銀行金額（媽媽五信）<span style="color:#888;font-size:.8em">· 只記錄不進對帳</span></label>
+      <input id="cbankmom" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
+    </div>
+    <div class="extra-item">
+      <label>銀行金額（韋甫五信）<span style="color:#888;font-size:.8em">· 只記錄不進對帳</span></label>
+      <input id="cbankwf" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
     </div>
 
     <!-- 備註 -->
@@ -1358,9 +1370,13 @@ function calcCount() {
     document.getElementById('s' + d).textContent = sub > 0 ? '$' + fmt(sub) : '—';
   });
 
-  const safe  = parseFloat(document.getElementById('csafe').value)  || 0;
-  const petty = parseFloat(document.getElementById('cpetty').value) || 0;
-  const total = coinTotal + safe + petty;
+  const safe    = parseFloat(document.getElementById('csafe').value)    || 0;
+  const box     = parseFloat(document.getElementById('cbox').value)     || 0;
+  const coin    = parseFloat(document.getElementById('ccoin').value)    || 0;
+  const bankMom = parseFloat(document.getElementById('cbankmom').value) || 0;
+  const bankWf  = parseFloat(document.getElementById('cbankwf').value)  || 0;
+  // 銀行兩筆只記錄、不進對帳，故不加入 total
+  const total = coinTotal + safe + box + coin;
 
   document.getElementById('cr-total').textContent = '$' + fmt(total);
 
@@ -1388,16 +1404,19 @@ function saveCount() {
     dData['d' + d] = qty;
     coinTotal += qty * d;
   });
-  const safe  = parseFloat(document.getElementById('csafe').value)  || 0;
-  const petty = parseFloat(document.getElementById('cpetty').value) || 0;
-  const total = coinTotal + safe + petty;
+  const safe    = parseFloat(document.getElementById('csafe').value)    || 0;
+  const box     = parseFloat(document.getElementById('cbox').value)     || 0;
+  const coin    = parseFloat(document.getElementById('ccoin').value)    || 0;
+  const bankMom = parseFloat(document.getElementById('cbankmom').value) || 0;
+  const bankWf  = parseFloat(document.getElementById('cbankwf').value)  || 0;
+  const total = coinTotal + safe + box + coin;  // 銀行不進 total
   const note  = document.getElementById('cnote').value.trim();
 
   const btn = document.getElementById('count-btn');
   btn.disabled = true;
   btn.textContent = '儲存中…';
 
-  api('saveCashCount', { ...dData, safe, petty, total, note })
+  api('saveCashCount', { ...dData, safe, box, coin, bankMom, bankWf, total, note })
     .then(r => {
       if (r.success) {
         const sign = r.diff >= 0 ? '+' : '';

@@ -1,6 +1,6 @@
 // 珍北平現金簿 Service Worker
 // 改版時只要改 CACHE_VERSION，啟用時就會清掉舊快取
-const CACHE_VERSION = 'v7-2026-05-13-accountant-xlsx';
+const CACHE_VERSION = 'v8-2026-05-17-count-5fields';
 const CACHE_NAME = 'cashbook-' + CACHE_VERSION;
 const APP_SHELL = ['./', './index.html', './manifest.json'];
 
