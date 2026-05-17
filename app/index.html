@@ -928,11 +928,11 @@ body {
       <input id="ccoin" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
     </div>
     <div class="extra-item">
-      <label>銀行金額（媽媽五信）<span style="color:#888;font-size:.8em">· 只記錄不進對帳</span></label>
+      <label>銀行金額（媽媽五信）</label>
       <input id="cbankmom" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
     </div>
     <div class="extra-item">
-      <label>銀行金額（韋甫五信）<span style="color:#888;font-size:.8em">· 只記錄不進對帳</span></label>
+      <label>銀行金額（韋甫五信）</label>
       <input id="cbankwf" type="number" inputmode="decimal" placeholder="0" min="0" oninput="calcCount()">
     </div>
 
@@ -1375,8 +1375,8 @@ function calcCount() {
   const coin    = parseFloat(document.getElementById('ccoin').value)    || 0;
   const bankMom = parseFloat(document.getElementById('cbankmom').value) || 0;
   const bankWf  = parseFloat(document.getElementById('cbankwf').value)  || 0;
-  // 銀行兩筆只記錄、不進對帳，故不加入 total
-  const total = coinTotal + safe + box + coin;
+  // 可運用資金總額：六項全加（現金簿帳上餘額本來就含銀行，差異仍準）
+  const total = coinTotal + safe + box + coin + bankMom + bankWf;
 
   document.getElementById('cr-total').textContent = '$' + fmt(total);
 
@@ -1409,7 +1409,7 @@ function saveCount() {
   const coin    = parseFloat(document.getElementById('ccoin').value)    || 0;
   const bankMom = parseFloat(document.getElementById('cbankmom').value) || 0;
   const bankWf  = parseFloat(document.getElementById('cbankwf').value)  || 0;
-  const total = coinTotal + safe + box + coin;  // 銀行不進 total
+  const total = coinTotal + safe + box + coin + bankMom + bankWf;  // 六項全加=可運用資金總額
   const note  = document.getElementById('cnote').value.trim();
 
   const btn = document.getElementById('count-btn');
