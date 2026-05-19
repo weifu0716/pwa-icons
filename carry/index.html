@@ -16,8 +16,6 @@ body{font-family:"Noto Sans TC",sans-serif;background:#EFEBE9;color:var(--bd)}
 .tb .dt{font-size:26px;font-weight:900;color:#FFCC80}
 .legend{padding:8px 16px;display:flex;gap:14px;font-size:12px;font-weight:700;align-items:center;border-bottom:1px solid var(--br);flex-wrap:wrap}
 .legend .dot{width:12px;height:12px;border-radius:2px;display:inline-block;margin-right:3px}
-
-/* 輸入區 */
 .ed{padding:14px 16px;background:#FBF7EF;border-bottom:2px dashed var(--br)}
 .ed h2{font-size:15px;color:var(--bm);margin-bottom:8px}
 .ed .hint{font-size:12px;color:var(--gy);margin:4px 0 10px}
@@ -27,9 +25,16 @@ body{font-family:"Noto Sans TC",sans-serif;background:#EFEBE9;color:var(--bd)}
 .itab td.s{font-weight:700;background:#FFF8E1;text-align:left;padding-left:6px;white-space:nowrap}
 .itab input{width:100%;border:1px solid #ddd;border-radius:4px;padding:5px 3px;text-align:center;font:inherit;font-size:13px}
 .itab input.sp{text-align:left}
+.itab td.ya{background:#FFF3E0;font-weight:700;color:var(--o)}
+.itab tr.yar td.s{background:#FFE0B2}
 .row2{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px}
 .row2 label{font-weight:700;color:var(--bm)}
-.row2 input{border:1px solid #ccc;border-radius:5px;padding:6px;width:70px;text-align:center;font:inherit}
+.row2 input{border:1px solid #ccc;border-radius:5px;padding:6px;width:64px;text-align:center;font:inherit}
+.yabox{margin-top:10px;border:2px solid #FFB74D;border-radius:8px;padding:10px 12px;background:#FFF8E1}
+.yabox .yt{font-size:13px;font-weight:900;color:var(--o);margin-bottom:6px}
+.yabox .yr{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:5px 0}
+.yabox input{border:1px solid #ccc;border-radius:5px;padding:6px;width:62px;text-align:center;font:inherit}
+.yabox .yres{font-weight:900;color:var(--o);font-size:15px}
 .tg{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:2px solid var(--br);border-radius:18px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600;user-select:none}
 .tg.ac{background:var(--o);color:#fff;border-color:var(--o)}
 .go{display:block;width:100%;padding:15px;margin-top:14px;background:#1B5E20;color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:900;font-family:inherit;cursor:pointer;letter-spacing:2px}
@@ -38,10 +43,8 @@ details{margin-top:10px;border:1px solid var(--br);border-radius:6px;background:
 details summary{padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--bm)}
 .pp{padding:0 10px 10px;font-size:12px}
 .pp .pr{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dotted #eee}
-.pp input{width:64px;text-align:center;border:1px solid #ddd;border-radius:4px;padding:3px;font:inherit}
+.pp input{width:60px;text-align:center;border:1px solid #ddd;border-radius:4px;padding:3px;font:inherit}
 .note{padding:10px 16px;font-size:12.5px;color:var(--bm);background:#FFF3E0;border-bottom:1px solid var(--br)}
-
-/* 報表（照 v3 report.html） */
 table.rt{width:100%;border-collapse:collapse;font-size:16px}
 table.rt th,table.rt td{border:1.5px solid var(--br);padding:8px 6px;text-align:center;vertical-align:middle}
 table.rt thead th{background:var(--bm);color:#fff;font-weight:700;font-size:15px}
@@ -90,35 +93,44 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
   </div>
 
   <div class="note">
-    這支內建 v3 真正的算法（產數＝豬肉×3−生肉×6取5、韭菜÷76、冬粉×0.67、大餅÷7.5、韭菜皮…）。
-    改完數字按 <b>✅ 確定，重算</b> 整張照 v3 公式重跑。<b>📊 產數已用 05/19 實際驗證 100% 吻合</b>；
-    📦 舊貨分配照 seed 參數算，若跟你後台不同 → 下方參數可改。
+    內建 v3 真算法（產數＝豬肉×3−生肉×6取5、韭菜÷76、冬粉×0.67、大餅÷7.5、韭菜皮…）。改完按
+    <b>✅ 確定，重算</b>整張照 v3 重跑。<b>📊 產數已用 05/19 實際驗證 100% 吻合</b>；
+    永安＝預設＋增減−今日剩餘自動算（不會負）；📦 舊貨分配照 seed，後台改過可在進階參數調。
   </div>
 
-  <!-- 輸入區 -->
   <div class="ed" id="edit">
     <h2>✏️ 各店輸入（明日攜帶；肉=盤、菜/大=個）</h2>
     <div class="row2">
       <label>日期</label><input id="i_date" style="width:110px" placeholder="05/19">
       <label class="tg" id="tHol"><span>⬜</span> 平日（按一下→假日）</label>
     </div>
-    <div class="hint">永安特殊：填的是「增減量」，系統＝預設(平日/假日)＋增減−今日剩餘。某店沒攜帶整列留空。</div>
+    <div class="hint">永安那列是系統自動算的（橘底）、不用填；要改永安去下面橘色框。某店沒攜帶整列留空。</div>
     <table class="itab">
       <thead><tr><th>店</th><th>肉(盤)</th><th>菜(個)</th><th>大(個)</th><th>補貨</th></tr></thead>
       <tbody id="iB"></tbody>
     </table>
+
+    <div class="yabox">
+      <div class="yt">🟠 永安特權（她只寫「剩多少」，系統自動算 = 預設 ＋ 增減 − 今日剩餘，最低0）</div>
+      <div class="yr">
+        <label>今日剩餘 肉(盤)</label><input id="i_ya肉" type="number" inputmode="decimal">
+        <label>菜(個)</label><input id="i_ya菜" type="number" inputmode="decimal">
+        <label>大(個)</label><input id="i_ya大" type="number" inputmode="decimal">
+        <span style="font-size:12px;color:var(--gy)">完售就填 0</span>
+      </div>
+      <div class="yr">
+        <label>增減（有訂單才＋，平常空白）肉</label><input id="i_yad肉" type="number" inputmode="decimal">
+        <label>菜</label><input id="i_yad菜" type="number" inputmode="decimal">
+        <label>大</label><input id="i_yad大" type="number" inputmode="decimal">
+      </div>
+      <div class="yr">→ 系統算出永安攜帶：<span class="yres" id="yaOut">肉 -- ／菜 -- ／大 --</span></div>
+    </div>
 
     <div class="row2">
       <label>南郭 生豬肉剩(鍋)</label><input id="i_raw" type="number" inputmode="decimal">
       <label>南郭今日剩餘 肉(盤)</label><input id="i_ng肉" type="number" inputmode="decimal">
       <label>菜(個)</label><input id="i_ng菜" type="number" inputmode="decimal">
       <label>大(個)</label><input id="i_ng大" type="number" inputmode="decimal">
-    </div>
-    <div class="row2">
-      <label>永安今日剩餘 肉(盤)</label><input id="i_ya肉" type="number" inputmode="decimal">
-      <label>菜(個)</label><input id="i_ya菜" type="number" inputmode="decimal">
-      <label>大(個)</label><input id="i_ya大" type="number" inputmode="decimal">
-      <span style="font-size:12px;color:var(--gy)">永安完售就都填 0</span>
     </div>
     <div class="row2">
       <label class="tg" id="tBf"><span>⬜</span> 早餐店要皮（+7kg）</label>
@@ -133,7 +145,6 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
     <button class="go" onclick="run()">✅ 確定，重算</button>
   </div>
 
-  <!-- 報表 -->
   <div id="rep" style="display:none">
     <table class="rt">
       <thead>
@@ -178,7 +189,6 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
 
 <script>
 "use strict";
-// ===== v3 設定（seed-data.json，可被進階參數覆蓋）=====
 var SO=['南郭','永安','彰南','鹿港','秀水','頂番','和美','花壇','大埔','內新'];
 var FB=['永安','彰南','鹿港','秀水'];
 var DEF={
@@ -189,30 +199,35 @@ var DEF={
     秀水:{肉:1.5,菜:15,大:15},頂番:{肉:1.5,菜:15,大:15},和美:{肉:1,菜:15,大:15},
     花壇:{肉:1.5,菜:15,大:15},大埔:{肉:1.5,菜:15,大:15}},
   preferLower:[],
-  // 收貨順序（seed allocationOrder）：永安1 彰南2 鹿港3 秀水4 頂番5 和美6 花壇7 大埔8（內新不收）
   receivers:['永安','彰南','鹿港','秀水','頂番','和美','花壇','大埔'],
   productionFormula:{porkRatio:3,rawPorkOffset:6,porkRoundUnit:5,chiveDivisor:76,
     chiveRoundUp:0.9,chiveRoundHalf:0.4,vermicelliRatio:0.67},
   bigBreadSplitThreshold:45
 };
-var P=JSON.parse(JSON.stringify(DEF)); // 現用參數
+var P=JSON.parse(JSON.stringify(DEF));
 var holiday=false,bf=false,hm=false;
 var $=function(i){return document.getElementById(i);};
 var n=function(v){v=(v==null?'':String(v)).trim();return v===''?0:(isNaN(Number(v))?0:Number(v));};
 function round(x,d){var f=Math.pow(10,d||2);return Math.round(x*f)/f;}
 function floorBy(x,u){return Math.floor(x/u)*u;}
 
-// ===== 建輸入列 =====
+// 建輸入列：永安那列改唯讀（系統算）
 SO.forEach(function(s){
   var tr=document.createElement('tr');
-  tr.innerHTML='<td class="s">'+s+'</td>'+
-    '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="肉"></td>'+
-    '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="菜"></td>'+
-    '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="大"></td>'+
-    '<td><input class="sp" data-s="'+s+'" data-k="補"></td>';
+  if(s==='永安'){
+    tr.className='yar';
+    tr.innerHTML='<td class="s">永安*</td>'+
+      '<td class="ya" id="yaR肉">--</td><td class="ya" id="yaR菜">--</td><td class="ya" id="yaR大">--</td>'+
+      '<td><input class="sp" data-s="永安" data-k="補"></td>';
+  }else{
+    tr.innerHTML='<td class="s">'+s+'</td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="肉"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="菜"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="大"></td>'+
+      '<td><input class="sp" data-s="'+s+'" data-k="補"></td>';
+  }
   $('iB').appendChild(tr);
 });
-// 進階參數 UI
 (function(){
   var f=P.productionFormula,h='';
   h+='<div class="pr"><span>豬肉：總肉盤×<input id="x_pr" value="'+f.porkRatio+'"> − 生肉鍋×<input id="x_ro" value="'+f.rawPorkOffset+'">，<input id="x_pu" value="'+f.porkRoundUnit+'">為單位捨去</span></div>';
@@ -234,13 +249,25 @@ function readParams(){
   P.allocationThresholds={肉:g('x_t肉'),菜:g('x_t菜'),大:g('x_t大')};
 }
 
-// ===== 算法（1:1 照搬 v3 production.js）=====
-function yongAn(inc,left){
+// 永安：預設 + 增減 − 今日剩餘，最低 0（1:1 照 v3 applyYongAnDefault）
+function yongAn(){
   var d=holiday?P.yongAnDefaults.holiday:P.yongAnDefaults.weekday;
-  return {肉:Math.max(0,d.肉+(inc.肉||0)-(left.肉||0)),
-          菜:Math.max(0,d.菜+(inc.菜||0)-(left.菜||0)),
-          大:Math.max(0,d.大+(inc.大||0)-(left.大||0))};
+  var inc={肉:n($('i_yad肉').value),菜:n($('i_yad菜').value),大:n($('i_yad大').value)};
+  var left={肉:n($('i_ya肉').value),菜:n($('i_ya菜').value),大:n($('i_ya大').value)};
+  return {肉:Math.max(0,d.肉+inc.肉-left.肉),
+          菜:Math.max(0,d.菜+inc.菜-left.菜),
+          大:Math.max(0,d.大+inc.大-left.大)};
 }
+function showYA(){
+  var y=yongAn();
+  $('yaR肉').textContent=y.肉;$('yaR菜').textContent=y.菜;$('yaR大').textContent=y.大;
+  $('yaOut').textContent='肉 '+y.肉+' ／菜 '+y.菜+' ／大 '+y.大;
+  return y;
+}
+['i_ya肉','i_ya菜','i_ya大','i_yad肉','i_yad菜','i_yad大'].forEach(function(id){
+  document.addEventListener('input',function(e){if(e.target&&e.target.id===id)showYA();});
+});
+
 function allocate(ngLeft){
   var th=P.allocationThresholds,lm=P.oldStockLimits,pl=P.preferLower,al={};
   P.receivers.forEach(function(r){al[r]={肉:0,菜:0,大:0};});
@@ -264,8 +291,7 @@ function compute(){
     var s=i.getAttribute('data-s'),k=i.getAttribute('data-k');
     inputs[s]=inputs[s]||{};inputs[s][k]=(k==='補')?i.value.trim():n(i.value);
   });
-  var yaLeft={肉:n($('i_ya肉').value),菜:n($('i_ya菜').value),大:n($('i_ya大').value)};
-  var ya=yongAn({肉:inputs['永安'].肉,菜:inputs['永安'].菜,大:inputs['永安'].大},yaLeft);
+  var ya=showYA();
   var totals={肉:0,菜:0,大:0};
   SO.forEach(function(s){
     var t=(s==='永安')?ya:{肉:inputs[s].肉,菜:inputs[s].菜,大:inputs[s].大};
@@ -291,7 +317,6 @@ function compute(){
     大餅:pots,breadCount:bc,breadTotal:totals.大,skinStacks:skS,skinFlour:skF},sd:sd};
 }
 
-// ===== 渲染（1:1 照搬 v3 report.html render）=====
 function render(a){
   var sd=a.sd,pr=a.production,tb=$('tB');tb.innerHTML='';
   var sf=0,sh=0,of_=0,oh=0,nv=0,nb=0,ov=0,ob=0,xf=0,xh=0,tm=0;
@@ -341,35 +366,37 @@ function render(a){
   $('rD').textContent=$('i_date').value||'--';
 }
 
-// ===== 收集/還原（資料編進網址 hash）=====
 function snapshot(){
   var st={};
   document.querySelectorAll('#iB input').forEach(function(i){
     var s=i.getAttribute('data-s'),k=i.getAttribute('data-k');
     st[s]=st[s]||{};st[s][k]=i.value;
   });
-  return {d:$('i_date').value,ho:holiday,bf:bf,hm:hm,
-    raw:$('i_raw').value,ng:[$('i_ng肉').value,$('i_ng菜').value,$('i_ng大').value],
-    ya:[$('i_ya肉').value,$('i_ya菜').value,$('i_ya大').value],st:st,P:P};
+  return {d:$('i_date').value,ho:holiday,bf:bf,hm:hm,raw:$('i_raw').value,
+    ng:[$('i_ng肉').value,$('i_ng菜').value,$('i_ng大').value],
+    ya:[$('i_ya肉').value,$('i_ya菜').value,$('i_ya大').value],
+    yad:[$('i_yad肉').value,$('i_yad菜').value,$('i_yad大').value],st:st,P:P};
 }
 function restore(o){
   $('i_date').value=o.d||'';holiday=!!o.ho;bf=!!o.bf;hm=!!o.hm;
   $('i_raw').value=o.raw||'';
   $('i_ng肉').value=o.ng[0]||'';$('i_ng菜').value=o.ng[1]||'';$('i_ng大').value=o.ng[2]||'';
   $('i_ya肉').value=o.ya[0]||'';$('i_ya菜').value=o.ya[1]||'';$('i_ya大').value=o.ya[2]||'';
+  var yd=o.yad||['','',''];
+  $('i_yad肉').value=yd[0]||'';$('i_yad菜').value=yd[1]||'';$('i_yad大').value=yd[2]||'';
   document.querySelectorAll('#iB input').forEach(function(i){
     var s=i.getAttribute('data-s'),k=i.getAttribute('data-k');
     if(o.st[s]&&o.st[s][k]!=null)i.value=o.st[s][k];
   });
   if(o.P)P=o.P;
-  syncTg();
+  syncTg();showYA();
 }
 function syncTg(){
   $('tHol').className='tg'+(holiday?' ac':'');$('tHol').innerHTML=(holiday?'<span>✅</span> 假日（按一下→平日）':'<span>⬜</span> 平日（按一下→假日）');
   $('tBf').className='tg'+(bf?' ac':'');$('tBf').innerHTML=(bf?'<span>✅</span> 早餐店要皮（+7kg）':'<span>⬜</span> 早餐店要皮（+7kg）');
   $('tHm').className='tg'+(hm?' ac':'');$('tHm').innerHTML=(hm?'<span>✅</span> 和美店長休假':'<span>⬜</span> 和美店長休假');
 }
-$('tHol').onclick=function(){holiday=!holiday;syncTg();};
+$('tHol').onclick=function(){holiday=!holiday;syncTg();showYA();};
 $('tBf').onclick=function(){bf=!bf;syncTg();};
 $('tHm').onclick=function(){hm=!hm;syncTg();};
 
@@ -384,19 +411,19 @@ function toEdit(){$('rep').style.display='none';$('edit').style.display='';windo
 function copyLink(){navigator.clipboard&&navigator.clipboard.writeText(location.href);
   event.target.textContent='✅ 已複製';setTimeout(function(){event.target.textContent='🔗 複製連結（轉發）';},1500);}
 
-// ===== 05/19 預載（＝你截圖那天，打開就看到一模一樣）=====
-var DEMO={d:'05/19',ho:false,bf:false,hm:false,raw:'1',ng:['4','0','10'],ya:['0','0','0'],
-  st:{南郭:{肉:'8',菜:'130',大:'100',補:''},永安:{肉:'-1',菜:'0',大:'-2',補:'泡菜、奶油'},
-  彰南:{肉:'3',菜:'50',大:'35',補:''},鹿港:{肉:'2.5',菜:'35',大:'35',補:'奶油×2 芝麻 泡菜'},
-  秀水:{肉:'1',菜:'15',大:'10',補:''},頂番:{肉:'1.5',菜:'25',大:'15',補:'芝麻'},
-  和美:{肉:'3',菜:'40',大:'20',補:'泡菜'},花壇:{肉:'2.5',菜:'25',大:'20',補:''},
-  大埔:{肉:'2',菜:'25',大:'20',補:''},內新:{肉:'',菜:'',大:'',補:''}}};
+// 05/19 預載（真實：永安昨天剩 肉1盤/菜0/大2個、無訂單 → 自動算 7/110/88）
+var DEMO={d:'05/19',ho:false,bf:false,hm:false,raw:'1',ng:['4','0','10'],
+  ya:['1','0','2'],yad:['','',''],
+  st:{南郭:{肉:'8',菜:'130',大:'100',補:''},永安:{補:'泡菜、奶油'},
+    彰南:{肉:'3',菜:'50',大:'35',補:''},鹿港:{肉:'2.5',菜:'35',大:'35',補:'奶油×2 芝麻 泡菜'},
+    秀水:{肉:'1',菜:'15',大:'10',補:''},頂番:{肉:'1.5',菜:'25',大:'15',補:'芝麻'},
+    和美:{肉:'3',菜:'40',大:'20',補:'泡菜'},花壇:{肉:'2.5',菜:'25',大:'20',補:''},
+    大埔:{肉:'2',菜:'25',大:'20',補:''},內新:{肉:'',菜:'',大:'',補:''}}};
 (function(){
   var m=location.hash.match(/d=(.+)/),o=null;
   if(m){try{o=JSON.parse(decodeURIComponent(m[1]));}catch(e){}}
   restore(o||DEMO);
-  if(o)run();          // 連結帶資料 → 直接出表
-  else syncTg();        // 預設 → 停在輸入區（已填 05/19，按確定即重現截圖）
+  if(o)run();
 })();
 </script>
 </body>
