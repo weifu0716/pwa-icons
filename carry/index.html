@@ -10,7 +10,7 @@
 :root{--bd:#3E2723;--bm:#5D4037;--bl:#8D6E63;--cr:#FFF8E1;--cd:#F5E6CA;--r:#C62828;--g:#2E7D32;--b:#1565C0;--o:#E65100;--gy:#757575;--br:#D7CCC8;--ta:#D84315;--tb:#2E7D32;--tc:#1565C0;--rl:#FFCDD2;--gl:#C8E6C9;--bbl:#BBDEFB}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Noto Sans TC",sans-serif;background:#EFEBE9;color:var(--bd)}
-.pg{max-width:820px;margin:0 auto;background:#fff;min-height:100vh}
+.pg{max-width:860px;margin:0 auto;background:#fff;min-height:100vh}
 .tb{background:var(--bd);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
 .tb h1{font-size:19px;font-weight:900;letter-spacing:2px}
 .tb .dt{font-size:26px;font-weight:900;color:#FFCC80}
@@ -19,31 +19,37 @@ body{font-family:"Noto Sans TC",sans-serif;background:#EFEBE9;color:var(--bd)}
 .ed{padding:14px 16px;background:#FBF7EF;border-bottom:2px dashed var(--br)}
 .ed h2{font-size:15px;color:var(--bm);margin-bottom:8px}
 .ed .hint{font-size:12px;color:var(--gy);margin:4px 0 10px}
-.itab{width:100%;border-collapse:collapse;font-size:13px}
-.itab th,.itab td{border:1px solid var(--br);padding:4px;text-align:center}
-.itab th{background:var(--cd);font-weight:700;font-size:12px}
-.itab td.s{font-weight:700;background:#FFF8E1;text-align:left;padding-left:6px;white-space:nowrap}
-.itab input{width:100%;border:1px solid #ddd;border-radius:4px;padding:5px 3px;text-align:center;font:inherit;font-size:13px}
-.itab input.sp{text-align:left}
-.itab td.ya{background:#FFF3E0;font-weight:700;color:var(--o)}
+.iwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.itab{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.itab th,.itab td{border:1px solid var(--br);padding:3px;text-align:center}
+.itab th{background:var(--cd);font-weight:700;font-size:11px}
+.itab th.go{background:#FFCDD2}.itab th.gn{background:#E0E0E0}
+.itab td.s{font-weight:700;background:#FFF8E1;text-align:left;padding-left:6px;white-space:nowrap;position:sticky;left:0;z-index:1}
+.itab input{width:52px;border:1px solid #ddd;border-radius:4px;padding:5px 2px;text-align:center;font:inherit;font-size:13px}
+.itab input.old{background:#FFF3E0;border-color:#FFB74D}
+.itab input.sp{width:96px;text-align:left}
+.itab td.ya{background:#FFF3E0;font-weight:700;color:var(--o);min-width:46px}
 .itab tr.yar td.s{background:#FFE0B2}
-.row2{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px}
+.cons{margin-top:8px;font-size:12.5px;font-weight:700;padding:7px 10px;border-radius:6px;background:#F1F8E9;border:1px solid #AED581}
+.cons.bad{background:#FFF3E0;border-color:#FFB74D;color:var(--o)}
+.row2{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:14px}
 .row2 label{font-weight:700;color:var(--bm)}
-.row2 input{border:1px solid #ccc;border-radius:5px;padding:6px;width:64px;text-align:center;font:inherit}
+.row2 input{border:1px solid #ccc;border-radius:5px;padding:6px;width:62px;text-align:center;font:inherit}
+.btn2{padding:8px 12px;border:2px solid var(--o);border-radius:8px;background:#fff;color:var(--o);font:inherit;font-weight:700;cursor:pointer}
 .yabox{margin-top:10px;border:2px solid #FFB74D;border-radius:8px;padding:10px 12px;background:#FFF8E1}
 .yabox .yt{font-size:13px;font-weight:900;color:var(--o);margin-bottom:6px}
 .yabox .yr{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;margin:5px 0}
-.yabox input{border:1px solid #ccc;border-radius:5px;padding:6px;width:62px;text-align:center;font:inherit}
+.yabox input{border:1px solid #ccc;border-radius:5px;padding:6px;width:60px;text-align:center;font:inherit}
 .yabox .yres{font-weight:900;color:var(--o);font-size:15px}
 .tg{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:2px solid var(--br);border-radius:18px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600;user-select:none}
 .tg.ac{background:var(--o);color:#fff;border-color:var(--o)}
-.go{display:block;width:100%;padding:15px;margin-top:14px;background:#1B5E20;color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:900;font-family:inherit;cursor:pointer;letter-spacing:2px}
-.go:active{filter:brightness(.92)}
+.go-b{display:block;width:100%;padding:15px;margin-top:14px;background:#1B5E20;color:#fff;border:none;border-radius:8px;font-size:17px;font-weight:900;font-family:inherit;cursor:pointer;letter-spacing:2px}
+.go-b:active{filter:brightness(.92)}
 details{margin-top:10px;border:1px solid var(--br);border-radius:6px;background:#fff}
 details summary{padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--bm)}
 .pp{padding:0 10px 10px;font-size:12px}
 .pp .pr{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dotted #eee}
-.pp input{width:60px;text-align:center;border:1px solid #ddd;border-radius:4px;padding:3px;font:inherit}
+.pp input{width:58px;text-align:center;border:1px solid #ddd;border-radius:4px;padding:3px;font:inherit}
 .note{padding:10px 16px;font-size:12.5px;color:var(--bm);background:#FFF3E0;border-bottom:1px solid var(--br)}
 table.rt{width:100%;border-collapse:collapse;font-size:16px}
 table.rt th,table.rt td{border:1.5px solid var(--br);padding:8px 6px;text-align:center;vertical-align:middle}
@@ -93,29 +99,41 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
   </div>
 
   <div class="note">
-    內建 v3 真算法（產數＝豬肉×3−生肉×6取5、韭菜÷76、冬粉×0.67、大餅÷7.5、韭菜皮…）。改完按
-    <b>✅ 確定，重算</b>整張照 v3 重跑。<b>📊 產數已用 05/19 實際驗證 100% 吻合</b>；
-    永安＝預設＋增減−今日剩餘自動算（不會負）；📦 舊貨分配照 seed，後台改過可在進階參數調。
+    內建 v3 真算法。<b>今天</b>＝各店明日攜帶（產數由它算，已用 05/19 驗證 100% 吻合）；
+    <b>舊（橘格）</b>＝南郭剩貨的分配，有算好的底、你可微調，<b>總量固定＝南郭今日剩餘</b>。
+    改完按 <b>✅ 確定，重算</b>。
   </div>
 
   <div class="ed" id="edit">
-    <h2>✏️ 各店輸入（明日攜帶；肉=盤、菜/大=個）</h2>
+    <h2>✏️ 各店輸入（肉=盤、菜/大=個）</h2>
     <div class="row2">
       <label>日期</label><input id="i_date" style="width:110px" placeholder="05/19">
       <label class="tg" id="tHol"><span>⬜</span> 平日（按一下→假日）</label>
     </div>
-    <div class="hint">永安那列是系統自動算的（橘底）、不用填；要改永安去下面橘色框。某店沒攜帶整列留空。</div>
-    <table class="itab">
-      <thead><tr><th>店</th><th>肉(盤)</th><th>菜(個)</th><th>大(個)</th><th>補貨</th></tr></thead>
+    <div class="hint">永安「今天」系統自動算（橘底唯讀，去下方橘框改剩餘）。「舊」橘格＝可微調，預設帶算好的底。某店沒攜帶今天留空。</div>
+    <div class="iwrap"><table class="itab">
+      <thead><tr><th>店</th>
+        <th class="gn">今肉</th><th class="go">舊肉</th>
+        <th class="gn">今菜</th><th class="go">舊菜</th>
+        <th class="gn">今大</th><th class="go">舊大</th>
+        <th>補貨</th></tr></thead>
       <tbody id="iB"></tbody>
-    </table>
+    </table></div>
+
+    <div class="row2">
+      <label>南郭今日剩餘＝舊貨總量(固定) 肉(盤)</label><input id="i_ng肉" type="number" inputmode="decimal">
+      <label>菜</label><input id="i_ng菜" type="number" inputmode="decimal">
+      <label>大</label><input id="i_ng大" type="number" inputmode="decimal">
+      <button class="btn2" type="button" onclick="autoOld()">🔄 用算法分配舊貨</button>
+    </div>
+    <div class="cons" id="cons">守恆檢查：--</div>
 
     <div class="yabox">
-      <div class="yt">🟠 永安特權（她只寫「剩多少」，系統自動算 = 預設 ＋ 增減 − 今日剩餘，最低0）</div>
+      <div class="yt">🟠 永安特權（她只寫「剩多少」，系統算 = 預設 ＋ 增減 − 今日剩餘，最低0）</div>
       <div class="yr">
         <label>今日剩餘 肉(盤)</label><input id="i_ya肉" type="number" inputmode="decimal">
-        <label>菜(個)</label><input id="i_ya菜" type="number" inputmode="decimal">
-        <label>大(個)</label><input id="i_ya大" type="number" inputmode="decimal">
+        <label>菜</label><input id="i_ya菜" type="number" inputmode="decimal">
+        <label>大</label><input id="i_ya大" type="number" inputmode="decimal">
         <span style="font-size:12px;color:var(--gy)">完售就填 0</span>
       </div>
       <div class="yr">
@@ -123,16 +141,11 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
         <label>菜</label><input id="i_yad菜" type="number" inputmode="decimal">
         <label>大</label><input id="i_yad大" type="number" inputmode="decimal">
       </div>
-      <div class="yr">→ 系統算出永安攜帶：<span class="yres" id="yaOut">肉 -- ／菜 -- ／大 --</span></div>
+      <div class="yr">→ 永安今天：<span class="yres" id="yaOut">肉 -- ／菜 -- ／大 --</span></div>
     </div>
 
     <div class="row2">
       <label>南郭 生豬肉剩(鍋)</label><input id="i_raw" type="number" inputmode="decimal">
-      <label>南郭今日剩餘 肉(盤)</label><input id="i_ng肉" type="number" inputmode="decimal">
-      <label>菜(個)</label><input id="i_ng菜" type="number" inputmode="decimal">
-      <label>大(個)</label><input id="i_ng大" type="number" inputmode="decimal">
-    </div>
-    <div class="row2">
       <label class="tg" id="tBf"><span>⬜</span> 早餐店要皮（+7kg）</label>
       <label class="tg" id="tHm"><span>⬜</span> 和美店長休假</label>
     </div>
@@ -142,7 +155,7 @@ tr.tt td{background:var(--cd);font-weight:900;font-size:18px;border-top:3px soli
       <div class="pp" id="pp"></div>
     </details>
 
-    <button class="go" onclick="run()">✅ 確定，重算</button>
+    <button class="go-b" onclick="run()">✅ 確定，重算</button>
   </div>
 
   <div id="rep" style="display:none">
@@ -211,20 +224,20 @@ var n=function(v){v=(v==null?'':String(v)).trim();return v===''?0:(isNaN(Number(
 function round(x,d){var f=Math.pow(10,d||2);return Math.round(x*f)/f;}
 function floorBy(x,u){return Math.floor(x/u)*u;}
 
-// 建輸入列：永安那列改唯讀（系統算）
+// 建輸入列（永安今天唯讀；舊全部可填）
 SO.forEach(function(s){
-  var tr=document.createElement('tr');
+  var tr=document.createElement('tr'),tcells;
   if(s==='永安'){
     tr.className='yar';
-    tr.innerHTML='<td class="s">永安*</td>'+
-      '<td class="ya" id="yaR肉">--</td><td class="ya" id="yaR菜">--</td><td class="ya" id="yaR大">--</td>'+
-      '<td><input class="sp" data-s="永安" data-k="補"></td>';
+    tcells='<td class="ya" id="yaR肉">--</td><td><input class="old" type="number" inputmode="decimal" data-s="永安" data-k="舊肉"></td>'+
+      '<td class="ya" id="yaR菜">--</td><td><input class="old" type="number" inputmode="decimal" data-s="永安" data-k="舊菜"></td>'+
+      '<td class="ya" id="yaR大">--</td><td><input class="old" type="number" inputmode="decimal" data-s="永安" data-k="舊大"></td>';
+    tr.innerHTML='<td class="s">永安*</td>'+tcells+'<td><input class="sp" data-s="永安" data-k="補"></td>';
   }else{
-    tr.innerHTML='<td class="s">'+s+'</td>'+
-      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="肉"></td>'+
-      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="菜"></td>'+
-      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="大"></td>'+
-      '<td><input class="sp" data-s="'+s+'" data-k="補"></td>';
+    tcells='<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="肉"></td><td><input class="old" type="number" inputmode="decimal" data-s="'+s+'" data-k="舊肉"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="菜"></td><td><input class="old" type="number" inputmode="decimal" data-s="'+s+'" data-k="舊菜"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="大"></td><td><input class="old" type="number" inputmode="decimal" data-s="'+s+'" data-k="舊大"></td>';
+    tr.innerHTML='<td class="s">'+s+'</td>'+tcells+'<td><input class="sp" data-s="'+s+'" data-k="補"></td>';
   }
   $('iB').appendChild(tr);
 });
@@ -249,14 +262,11 @@ function readParams(){
   P.allocationThresholds={肉:g('x_t肉'),菜:g('x_t菜'),大:g('x_t大')};
 }
 
-// 永安：預設 + 增減 − 今日剩餘，最低 0（1:1 照 v3 applyYongAnDefault）
 function yongAn(){
   var d=holiday?P.yongAnDefaults.holiday:P.yongAnDefaults.weekday;
   var inc={肉:n($('i_yad肉').value),菜:n($('i_yad菜').value),大:n($('i_yad大').value)};
   var left={肉:n($('i_ya肉').value),菜:n($('i_ya菜').value),大:n($('i_ya大').value)};
-  return {肉:Math.max(0,d.肉+inc.肉-left.肉),
-          菜:Math.max(0,d.菜+inc.菜-left.菜),
-          大:Math.max(0,d.大+inc.大-left.大)};
+  return {肉:Math.max(0,d.肉+inc.肉-left.肉),菜:Math.max(0,d.菜+inc.菜-left.菜),大:Math.max(0,d.大+inc.大-left.大)};
 }
 function showYA(){
   var y=yongAn();
@@ -264,10 +274,27 @@ function showYA(){
   $('yaOut').textContent='肉 '+y.肉+' ／菜 '+y.菜+' ／大 '+y.大;
   return y;
 }
-['i_ya肉','i_ya菜','i_ya大','i_yad肉','i_yad菜','i_yad大'].forEach(function(id){
-  document.addEventListener('input',function(e){if(e.target&&e.target.id===id)showYA();});
+function oldInput(s,cat){
+  return document.querySelector('#iB input[data-s="'+s+'"][data-k="舊'+cat+'"]');
+}
+function updateCons(){
+  var ng={肉:n($('i_ng肉').value),菜:n($('i_ng菜').value),大:n($('i_ng大').value)};
+  var sum={肉:0,菜:0,大:0};
+  SO.forEach(function(s){['肉','菜','大'].forEach(function(c){var el=oldInput(s,c);if(el)sum[c]+=n(el.value);});});
+  var ok=['肉','菜','大'].every(function(c){return Math.abs(sum[c]-ng[c])<0.001;});
+  var box=$('cons');
+  box.className='cons'+(ok?'':' bad');
+  box.innerHTML='守恆檢查（舊貨總量固定）：南郭剩餘 肉'+ng.肉+'/菜'+ng.菜+'/大'+ng.大+
+    ' ｜ 各店舊加總 肉'+round(sum.肉,2)+'/菜'+round(sum.菜,2)+'/大'+round(sum.大,2)+
+    ' '+(ok?'✅ 對得起來':'⚠️ 對不起來（你分的舊貨總和 ≠ 南郭剩的，檢查一下）');
+}
+document.addEventListener('input',function(e){
+  var t=e.target;if(!t)return;
+  if(['i_ya肉','i_ya菜','i_ya大','i_yad肉','i_yad菜','i_yad大'].indexOf(t.id)>=0)showYA();
+  if((t.getAttribute&&/^舊/.test(t.getAttribute('data-k')||''))||['i_ng肉','i_ng菜','i_ng大'].indexOf(t.id)>=0)updateCons();
 });
 
+// 1:1 v3 allocate（只給「用算法分配舊貨」鈕用）
 function allocate(ngLeft){
   var th=P.allocationThresholds,lm=P.oldStockLimits,pl=P.preferLower,al={};
   P.receivers.forEach(function(r){al[r]={肉:0,菜:0,大:0};});
@@ -285,6 +312,19 @@ function allocate(ngLeft){
   });
   return al;
 }
+function autoOld(){
+  readParams();
+  var ng={肉:n($('i_ng肉').value),菜:n($('i_ng菜').value),大:n($('i_ng大').value)};
+  var al=allocate(ng);
+  SO.forEach(function(s){
+    var v=al[s]||{肉:0,菜:0,大:0};
+    ['肉','菜','大'].forEach(function(c){
+      var el=oldInput(s,c);if(el)el.value=(v[c]||0)===0?'':v[c];
+    });
+  });
+  updateCons();
+}
+
 function compute(){
   var inputs={};
   document.querySelectorAll('#iB input').forEach(function(i){
@@ -297,8 +337,7 @@ function compute(){
     var t=(s==='永安')?ya:{肉:inputs[s].肉,菜:inputs[s].菜,大:inputs[s].大};
     totals.肉+=t.肉;totals.菜+=t.菜;totals.大+=t.大;
   });
-  var rawPork=n($('i_raw').value);
-  var f=P.productionFormula;
+  var rawPork=n($('i_raw').value),f=P.productionFormula;
   var pork=floorBy(Math.max(0,totals.肉*f.porkRatio-rawPork*f.rawPorkOffset),f.porkRoundUnit);
   var cR=totals.菜/f.chiveDivisor,cI=Math.floor(cR),cD=cR-cI,chive;
   if(cD>=f.chiveRoundUp)chive=cI+1;else if(cD>=f.chiveRoundHalf)chive=cI+0.5;else chive=cI;
@@ -306,12 +345,10 @@ function compute(){
   var bc=Math.floor(totals.大/7.5);
   var pots=bc>P.bigBreadSplitThreshold?{第一鍋:bc-22,第二鍋:22}:{第一鍋:bc,第二鍋:0};
   var skS=Math.max(0,15+(chive-6)*2),skF=skS+11;
-  var ngLeft={肉:n($('i_ng肉').value),菜:n($('i_ng菜').value),大:n($('i_ng大').value)};
-  var al=allocate(ngLeft);
   var sd={};
   SO.forEach(function(s){
     var t=(s==='永安')?ya:{肉:inputs[s].肉,菜:inputs[s].菜,大:inputs[s].大};
-    sd[s]={today:t,old:al[s]||{肉:0,菜:0,大:0},supply:inputs[s].補||''};
+    sd[s]={today:t,old:{肉:inputs[s].舊肉||0,菜:inputs[s].舊菜||0,大:inputs[s].舊大||0},supply:inputs[s].補||''};
   });
   return {totals:totals,production:{豬肉斤:pork,韭菜把:chive,冬粉包:verm,
     大餅:pots,breadCount:bc,breadTotal:totals.大,skinStacks:skS,skinFlour:skF},sd:sd};
@@ -389,7 +426,7 @@ function restore(o){
     if(o.st[s]&&o.st[s][k]!=null)i.value=o.st[s][k];
   });
   if(o.P)P=o.P;
-  syncTg();showYA();
+  syncTg();showYA();updateCons();
 }
 function syncTg(){
   $('tHol').className='tg'+(holiday?' ac':'');$('tHol').innerHTML=(holiday?'<span>✅</span> 假日（按一下→平日）':'<span>⬜</span> 平日（按一下→假日）');
@@ -401,9 +438,7 @@ $('tBf').onclick=function(){bf=!bf;syncTg();};
 $('tHm').onclick=function(){hm=!hm;syncTg();};
 
 function run(){
-  readParams();
-  var a=compute();
-  render(a);
+  readParams();var a=compute();render(a);
   location.hash='d='+encodeURIComponent(JSON.stringify(snapshot()));
   $('edit').style.display='none';$('rep').style.display='';window.scrollTo(0,0);
 }
@@ -411,14 +446,19 @@ function toEdit(){$('rep').style.display='none';$('edit').style.display='';windo
 function copyLink(){navigator.clipboard&&navigator.clipboard.writeText(location.href);
   event.target.textContent='✅ 已複製';setTimeout(function(){event.target.textContent='🔗 複製連結（轉發）';},1500);}
 
-// 05/19 預載（真實：永安昨天剩 肉1盤/菜0/大2個、無訂單 → 自動算 7/110/88）
+// 05/19 預載（真實：永安剩肉1/菜0/大2→自動7/110/88；舊＝截圖實際分配，總和=南郭剩餘）
 var DEMO={d:'05/19',ho:false,bf:false,hm:false,raw:'1',ng:['4','0','10'],
   ya:['1','0','2'],yad:['','',''],
-  st:{南郭:{肉:'8',菜:'130',大:'100',補:''},永安:{補:'泡菜、奶油'},
-    彰南:{肉:'3',菜:'50',大:'35',補:''},鹿港:{肉:'2.5',菜:'35',大:'35',補:'奶油×2 芝麻 泡菜'},
-    秀水:{肉:'1',菜:'15',大:'10',補:''},頂番:{肉:'1.5',菜:'25',大:'15',補:'芝麻'},
-    和美:{肉:'3',菜:'40',大:'20',補:'泡菜'},花壇:{肉:'2.5',菜:'25',大:'20',補:''},
-    大埔:{肉:'2',菜:'25',大:'20',補:''},內新:{肉:'',菜:'',大:'',補:''}}};
+  st:{南郭:{肉:'8',舊肉:'1.5',菜:'130',舊菜:'',大:'100',舊大:'10',補:''},
+    永安:{舊肉:'1',舊菜:'',舊大:'',補:'泡菜、奶油'},
+    彰南:{肉:'3',舊肉:'0.5',菜:'50',舊菜:'',大:'35',舊大:'',補:''},
+    鹿港:{肉:'2.5',舊肉:'0.5',菜:'35',舊菜:'',大:'35',舊大:'',補:'奶油×2 芝麻 泡菜'},
+    秀水:{肉:'1',舊肉:'',菜:'15',舊菜:'',大:'10',舊大:'',補:''},
+    頂番:{肉:'1.5',舊肉:'',菜:'25',舊菜:'',大:'15',舊大:'',補:'芝麻'},
+    和美:{肉:'3',舊肉:'0.5',菜:'40',舊菜:'',大:'20',舊大:'',補:'泡菜'},
+    花壇:{肉:'2.5',舊肉:'',菜:'25',舊菜:'',大:'20',舊大:'',補:''},
+    大埔:{肉:'2',舊肉:'',菜:'25',舊菜:'',大:'20',舊大:'',補:''},
+    內新:{肉:'',舊肉:'',菜:'',舊菜:'',大:'',舊大:'',補:''}}};
 (function(){
   var m=location.hash.match(/d=(.+)/),o=null;
   if(m){try{o=JSON.parse(decodeURIComponent(m[1]));}catch(e){}}
