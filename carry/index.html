@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>明日攜帶 · 手填生報表</title>
+<style>
+  :root{--bg:#F5EFE2;--card:#FFFDF7;--line:#C9B89A;--ink:#2A1B0F;--red:#8B0000;--muted:#6a5a45}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    background:var(--bg);color:var(--ink);margin:0;padding:16px}
+  .wrap{max-width:720px;margin:0 auto;padding-bottom:48px}
+  h1{color:var(--red);font-size:21px;margin:4px 0 2px}
+  .muted{color:var(--muted);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0}
+  h3{margin:0 0 10px;font-size:16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:6px 6px;text-align:left;border-bottom:1px solid #eadfc8;font-size:14px}
+  th{background:#f0e8d3}
+  .big{font-size:22px;font-weight:700;color:var(--red)}
+  .row{display:flex;justify-content:space-between;padding:5px 0;align-items:center}
+  input,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);
+    border-radius:7px;padding:8px}
+  input[type=number]{width:74px;text-align:center;-moz-appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  td input{width:100%}
+  .f{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+  .f label{font-size:13px;color:var(--muted)}
+  .f input,.f textarea{width:100%}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pgrid .lab{font-size:14px}
+  button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:13px;cursor:pointer}
+  .primary{background:var(--red);color:#fff;width:100%;font-size:16px;margin-top:6px}
+  .ghost{background:#efe6d2;color:var(--ink);border:1px solid var(--line)}
+  .bar{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+  .bar button{flex:1;min-width:120px}
+  .linkbox{word-break:break-all;background:#fff;border:1px dashed var(--line);
+    border-radius:7px;padding:9px;font-size:12px;color:#444;margin:8px 0}
+  pre{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:7px;
+    padding:10px;font-size:13px;margin:8px 0}
+  .hide{display:none}
+  .hint{color:var(--muted);font-size:12.5px;margin-top:4px}
+  .ok{color:#1f7a1f;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== 檢視模式 ===== -->
+  <div id="view" class="hide">
+    <h1 id="vtitle">📋 明日攜帶</h1>
+    <div class="muted" id="vnote"></div>
+
+    <section class="card">
+      <h3>📊 產數</h3>
+      <div class="row"><span>🥩 餡餅</span><span class="big"><span id="v豬肉">0</span> 斤</span></div>
+      <div class="row"><span>🌿 韭菜</span><span class="big"><span id="v韭菜">0</span> 把</span></div>
+      <div class="row"><span>🍜 冬粉</span><span class="big"><span id="v冬粉">0</span> 包</span></div>
+      <div class="row"><span>🫓 大餅</span><span class="big"><span id="v大1">0</span>/<span id="v大2">0</span> 鍋</span></div>
+    </section>
+
+    <section class="card">
+      <h3>📦 各店攜帶（舊貨分配）</h3>
+      <table><thead><tr><th>店</th><th>肉</th><th>菜</th><th>大餅</th></tr></thead>
+      <tbody id="vrows"></tbody></table>
+    </section>
+
+    <div class="bar">
+      <button class="ghost" onclick="copyText()">📋 複製文字版（貼 LINE）</button>
+      <button class="ghost" onclick="copyLink()">🔗 複製這條連結</button>
+      <button class="ghost" onclick="toEdit()">✏️ 改一下</button>
+    </div>
+    <pre id="txt" class="hide"></pre>
+    <div class="hint">這條連結把數字編在網址裡，沒有後端、永遠打得開，轉給誰都行。</div>
+  </div>
+
+  <!-- ===== 填寫模式 ===== -->
+  <div id="edit">
+    <h1>📋 明日攜帶 · 手填</h1>
+    <div class="muted">填最終數字（沒報的店沿用上次、有報的填新的）→ 產生報表＋連結。零後端、現在就能用。</div>
+
+    <section class="card">
+      <div class="f"><label>日期 / 標題</label>
+        <input id="e_date" placeholder="例：5/19 明日攜帶"></div>
+      <div class="f"><label>備註（哪些店是沿用哪天，自己寫給對方看）</label>
+        <input id="e_note" placeholder="例：秀水=5/19、其他=5/18 沿用（公休）"></div>
+    </section>
+
+    <section class="card">
+      <h3>📊 產數</h3>
+      <div class="pgrid">
+        <span class="lab">🥩 餡餅（斤）</span><input type="number" id="e_豬肉" inputmode="decimal">
+        <span class="lab">🌿 韭菜（把）</span><input type="number" id="e_韭菜" inputmode="decimal">
+        <span class="lab">🍜 冬粉（包）</span><input type="number" id="e_冬粉" inputmode="decimal">
+        <span class="lab">🫓 大餅 第一鍋</span><input type="number" id="e_大1" inputmode="decimal">
+        <span class="lab">🫓 大餅 第二鍋</span><input type="number" id="e_大2" inputmode="decimal">
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>📦 各店攜帶</h3>
+      <div class="hint">該店那天沒攜帶就整列留空，報表不會列它。</div>
+      <table><thead><tr><th>店</th><th>肉</th><th>菜</th><th>大餅</th></tr></thead>
+      <tbody id="erows"></tbody></table>
+    </section>
+
+    <button class="primary" onclick="gen()">✅ 產生報表 + 連結</button>
+  </div>
+
+</div>
+<script>
+"use strict";
+var STORES = ["南郭","永安","彰南","鹿港","秀水","頂番","和美","花壇","大埔","內新"];
+var $ = function(id){ return document.getElementById(id); };
+
+// 建填寫表格列
+(function(){
+  var tb = $("erows");
+  STORES.forEach(function(s){
+    var tr = document.createElement("tr");
+    tr.innerHTML = '<td>'+s+'</td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="肉"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="菜"></td>'+
+      '<td><input type="number" inputmode="decimal" data-s="'+s+'" data-k="大"></td>';
+    tb.appendChild(tr);
+  });
+})();
+
+function num(v){ if(v===""||v==null) return ""; var n=Number(v); return isNaN(n)? String(v):n; }
+
+function collect(){
+  var stores={};
+  document.querySelectorAll('#erows input').forEach(function(i){
+    var s=i.getAttribute('data-s'), k=i.getAttribute('data-k'), val=i.value.trim();
+    if(val==="") return;
+    stores[s]=stores[s]||{}; stores[s][k]=num(val);
+  });
+  return {
+    t:$("e_date").value.trim()||("明日攜帶"),
+    n:$("e_note").value.trim(),
+    p:{ 豬肉:num($("e_豬肉").value.trim()), 韭菜:num($("e_韭菜").value.trim()),
+        冬粉:num($("e_冬粉").value.trim()), 大1:num($("e_大1").value.trim()), 大2:num($("e_大2").value.trim()) },
+    s:stores
+  };
+}
+
+function encode(d){ return "#d="+encodeURIComponent(JSON.stringify(d)); }
+function decode(){
+  try{
+    var m=location.hash.match(/#d=(.+)/); if(!m) return null;
+    return JSON.parse(decodeURIComponent(m[1]));
+  }catch(e){ return null; }
+}
+
+function show(d){
+  $("vtitle").textContent="📋 "+(d.t||"明日攜帶");
+  $("vnote").textContent=d.n||"";
+  $("v豬肉").textContent=d.p.豬肉||0; $("v韭菜").textContent=d.p.韭菜||0;
+  $("v冬粉").textContent=d.p.冬粉||0; $("v大1").textContent=d.p.大1||0; $("v大2").textContent=d.p.大2||0;
+  var tb=$("vrows"); tb.innerHTML="";
+  STORES.forEach(function(s){
+    var v=d.s[s]; if(!v) return;
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td>'+s+'</td><td>'+(v.肉??"")+'</td><td>'+(v.菜??"")+'</td><td>'+(v.大??"")+'</td>';
+    tb.appendChild(tr);
+  });
+  $("edit").classList.add("hide");
+  $("view").classList.remove("hide");
+  window.__d=d;
+}
+
+function buildText(d){
+  var L=[];
+  L.push("📋 "+(d.t||"明日攜帶"));
+  if(d.n) L.push(d.n);
+  L.push("");
+  L.push("📊 產數");
+  L.push("🥩餡餅 "+(d.p.豬肉||0)+"斤 ／🌿韭菜 "+(d.p.韭菜||0)+"把 ／🍜冬粉 "+(d.p.冬粉||0)+"包 ／🫓大餅 "+(d.p.大1||0)+"/"+(d.p.大2||0)+"鍋");
+  L.push("");
+  L.push("📦 各店攜帶（肉/菜/大餅）");
+  STORES.forEach(function(s){
+    var v=d.s[s]; if(!v) return;
+    L.push(s+"  "+(v.肉??"-")+" / "+(v.菜??"-")+" / "+(v.大??"-"));
+  });
+  return L.join("\n");
+}
+
+function gen(){
+  var d=collect();
+  location.hash=encode(d).slice(1);
+  show(d);
+  window.scrollTo(0,0);
+}
+function toEdit(){
+  var d=window.__d; if(d){
+    $("e_date").value=d.t||""; $("e_note").value=d.n||"";
+    $("e_豬肉").value=d.p.豬肉??""; $("e_韭菜").value=d.p.韭菜??"";
+    $("e_冬粉").value=d.p.冬粉??""; $("e_大1").value=d.p.大1??""; $("e_大2").value=d.p.大2??"";
+    document.querySelectorAll('#erows input').forEach(function(i){
+      var s=i.getAttribute('data-s'),k=i.getAttribute('data-k');
+      i.value=(d.s[s]&&d.s[s][k]!=null)? d.s[s][k] : "";
+    });
+  }
+  $("view").classList.add("hide");
+  $("edit").classList.remove("hide");
+  window.scrollTo(0,0);
+}
+function copyText(){
+  var t=buildText(window.__d||{p:{},s:{}});
+  $("txt").textContent=t; $("txt").classList.remove("hide");
+  navigator.clipboard && navigator.clipboard.writeText(t);
+  flash(event.target,"✅ 已複製文字");
+}
+function copyLink(){
+  navigator.clipboard && navigator.clipboard.writeText(location.href);
+  flash(event.target,"✅ 已複製連結");
+}
+function flash(btn,msg){ var o=btn.textContent; btn.textContent=msg;
+  setTimeout(function(){ btn.textContent=o; },1500); }
+
+// 啟動：網址有資料→檢視，否則→填寫
+(function(){ var d=decode(); if(d) show(d); })();
+</script>
+</body>
+</html>
